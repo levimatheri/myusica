@@ -40,6 +40,7 @@ class TextFieldFocus extends StatefulWidget {
 
 class TextFieldFocusState extends State<TextFieldFocus> {
   FocusNode _focusNode = new FocusNode();
+  final locationEditingController = new TextEditingController();
 
   @override
   void initState() {
@@ -47,19 +48,26 @@ class TextFieldFocusState extends State<TextFieldFocus> {
     _focusNode.addListener(_onFocusChange);
   }
 
-  void _onFocusChange() {
+  void _onFocusChange() async {
     if (_focusNode.hasFocus) {
       _focusNode.unfocus();
       return;
     }
-    //debugPrint(_focusNode.hasFocus.toString());
-    Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => LocationQuery(),
-        ),
+
+    // return a Future that will complete after
+    // Navigator.pop on location_query screen
+    final result = Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LocationQuery(),
+      ),
     );
+
+    // set location text field to the result from location query
+    locationEditingController.text = result.toString();
   }
+
+    //fill location text box
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +77,14 @@ class TextFieldFocusState extends State<TextFieldFocus> {
           hintText: "Location"
         ),
         focusNode: _focusNode,
+        controller: locationEditingController,
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    locationEditingController.dispose();
+    super.dispose();
   }
 }
