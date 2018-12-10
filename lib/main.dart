@@ -9,6 +9,7 @@ void main() {
   ));
 }
 
+// LOGIN PAGE
 class LoginPage extends StatelessWidget {
   // This widget is the root of your application.
   @override
@@ -21,6 +22,7 @@ class LoginPage extends StatelessWidget {
         child: RaisedButton(
             child: Text('Launch home'),
             onPressed: () {
+              // Send user to home page if successful login
               Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => HomePage()),

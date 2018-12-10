@@ -8,7 +8,7 @@ class LocationQuery extends StatefulWidget {
 class _LocationQueryState extends State<LocationQuery> {
   List<DropdownMenuItem<String>> results = [];
   String selected;
-  String previous = '';
+  String previous = "";
   var isLoading = false;
   final locationTextController = TextEditingController();
 
@@ -43,7 +43,6 @@ class _LocationQueryState extends State<LocationQuery> {
     setState(() {
       isLoading = true;
     });
-    debugPrint("new text");
     previous = searchQuery;
     final places = new GoogleMapsPlaces(apiKey: 'AIzaSyCvu_XwzNjF33uBV5kS9XHJdpUMnqooFrA');
 
@@ -51,11 +50,11 @@ class _LocationQueryState extends State<LocationQuery> {
       await places.searchByText(searchQuery);
     results = response.results.map((val) => new DropdownMenuItem(
         child: new Text(
-            val.name,
+            val.name + "...",
             overflow: TextOverflow.ellipsis,
             style: new TextStyle(fontSize: 12.0)
         ),
-        value: val.name,
+        value: val.formattedAddress
     )).toList();
 
     setState(() {
@@ -105,6 +104,7 @@ class _LocationQueryState extends State<LocationQuery> {
                   hint: new Text("Select location"),
                   onChanged: (value) {
                     selected = value;
+                    // return user selection to home page
                     Navigator.pop(context, selected);
                   }
               ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:myusica/subs/location_query.dart';
+import 'package:myusica/subs/specialization_query.dart';
 
 class HomePage extends StatelessWidget {
   @override
@@ -39,45 +40,80 @@ class TextFieldFocus extends StatefulWidget {
 }
 
 class TextFieldFocusState extends State<TextFieldFocus> {
-  FocusNode _focusNode = new FocusNode();
+  FocusNode _locationFocusNode = new FocusNode();
+  FocusNode _specFocusNode = new FocusNode();
   final locationEditingController = new TextEditingController();
+  final specializationEditingController = new TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _focusNode.addListener(_onFocusChange);
+    _locationFocusNode.addListener(
+      () => _onFocusChange(
+          _locationFocusNode, LocationQuery(), locationEditingController
+      )
+    );
+    _specFocusNode.addListener(
+      () => _onFocusChange(
+          _specFocusNode, SpecializationQuery(), specializationEditingController
+      )
+    );
+    locationEditingController.clear();
+    specializationEditingController.clear();
   }
 
-  void _onFocusChange() async {
-    if (_focusNode.hasFocus) {
-      _focusNode.unfocus();
+  void _onFocusChange(
+      FocusNode fn, dynamic destination, TextEditingController controller
+      ) async {
+    if (fn.hasFocus) {
+      fn.unfocus();
       return;
     }
-
-    // return a Future that will complete after
-    // Navigator.pop on location_query screen
-    final result = Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => LocationQuery(),
-      ),
-    );
-
-    // set location text field to the result from location query
-    locationEditingController.text = result.toString();
+    getResult(destination, controller);
   }
 
-    //fill location text box
+  // return a Future that will complete after
+  // Navigator.pop on query screen
+  Future getResult(dynamic destination, TextEditingController controller) {
+    return Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => destination,
+      ),
+    ).then((result) {
+      if (result != null) controller.text = "$result";
+    }); // put result in text field
+  }
 
   @override
   Widget build(BuildContext context) {
     return new Container(
-      child: new TextField(
-        decoration: InputDecoration(
-          hintText: "Location"
-        ),
-        focusNode: _focusNode,
-        controller: locationEditingController,
+      child: Column(
+        children: <Widget>[
+          new Text(
+            "Location",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          new TextField(
+            decoration: InputDecoration(
+                hintText: "Input location"
+            ),
+            focusNode: _locationFocusNode,
+            controller: locationEditingController,
+          ),
+          new Container(margin: const EdgeInsets.only(bottom: 50.0),),
+          new Text(
+            "Specialization",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          new TextField(
+            decoration: InputDecoration(
+                hintText: "Input specialization"
+            ),
+            focusNode: _specFocusNode,
+            controller: specializationEditingController,
+          ),
+        ],
       ),
     );
   }
