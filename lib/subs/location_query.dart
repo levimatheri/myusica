@@ -5,11 +5,14 @@ class LocationQuery extends StatefulWidget {
   _LocationQueryState createState() => _LocationQueryState();
 }
 
-class _LocationQueryState extends State<LocationQuery> {
+class _LocationQueryState extends State<LocationQuery> with
+AutomaticKeepAliveClientMixin<LocationQuery> {
   List<DropdownMenuItem<String>> results = [];
   String selected;
   String previous = "";
+  String currentText = "";
   var isLoading = false;
+  var isGoClicked = false;
   final locationTextController = TextEditingController();
 
   @override
@@ -28,9 +31,6 @@ class _LocationQueryState extends State<LocationQuery> {
 //      //debugPrint(json.decode(response.body)['candidates'][0]['formatted_address'].toString());
 //      list = (json.decode(response.body)['candidates'] as List)
 //              .map((data) => new Candidates.from(data)).toList();
-//      setState(() {
-//        isLoading = false
-//      });
 //    } else throw Exception('Failed to load addresses');
 //  }
 
@@ -42,6 +42,7 @@ class _LocationQueryState extends State<LocationQuery> {
 
     setState(() {
       isLoading = true;
+      isGoClicked = true;
     });
     previous = searchQuery;
     final places = new GoogleMapsPlaces(apiKey: 'AIzaSyCvu_XwzNjF33uBV5kS9XHJdpUMnqooFrA');
@@ -71,15 +72,24 @@ class _LocationQueryState extends State<LocationQuery> {
       body: Column(
         children: <Widget>[
           new Container(
+            padding: const EdgeInsets.only(top: 20.0, bottom: 10.0),
+            child: new Text(
+              "Enter location (upto street name for best results)",
+              style: new TextStyle(
+                  fontSize: 11.5
+              ),
+            ),
+          ),
+          new Container(
             child: Padding(
-                padding: const EdgeInsets.only(top:30.0, bottom: 30.0, left: 10.0, right: 10.0),
+                padding: const EdgeInsets.only(bottom: 30.0, left: 10.0, right: 10.0),
                 child: Row(
                   children: <Widget>[
                     new Container(
                       child: new Flexible (
                         child: TextField(
                           decoration: InputDecoration(
-                            hintText: "Enter location",
+                            hintText: "Enter location (upto street name for best results)",
                           ),
                           controller: locationTextController,
                         ),
@@ -97,20 +107,34 @@ class _LocationQueryState extends State<LocationQuery> {
             ),
           ),
           new Container(
-            child: isLoading ? new CircularProgressIndicator() :
-              new DropdownButton(
-                  value: selected,
-                  items: results,
-                  hint: new Text("Select location"),
-                  onChanged: (value) {
-                    selected = value;
-                    // return user selection to home page
-                    Navigator.pop(context, selected);
-                  }
-              ),
+            child: generateOptions(),
           ),
         ],
       ),
     );
+  }
+
+  @override
+  // TODO: implement wantKeepAlive
+  bool get wantKeepAlive => true;
+
+  dynamic generateOptions() {
+    if (isGoClicked) {
+      return isLoading ? new CircularProgressIndicator() :
+        new DropdownButton(
+            value: selected,
+            items: results,
+            hint: new Text("Select location"),
+            onChanged: (value) {
+              selected = value;
+              currentText = selected;
+              setState(() {
+                isGoClicked = false;
+              });
+              // return user selection to home page
+              Navigator.pop(context, selected);
+            }
+        );
+    }
   }
 }

@@ -5,7 +5,8 @@ class SpecializationQuery extends StatefulWidget {
   _SpecializationQueryState createState() => _SpecializationQueryState();
 }
 
-class _SpecializationQueryState extends State<SpecializationQuery> {
+class _SpecializationQueryState extends State<SpecializationQuery> with
+AutomaticKeepAliveClientMixin<SpecializationQuery> {
   String selected;
   String previous = "";
   String currentText = "";
@@ -62,12 +63,7 @@ class _SpecializationQueryState extends State<SpecializationQuery> {
                     hintText: "Enter specialization"
                 ),
                 textChanged: (text) => currentText = text,
-                textSubmitted: (text) => setState(() {
-                  //added.add(text);
-                  //snackBar = SnackBar(content: Text(text + " selected"),);
-                  //Scaffold.of(context).showSnackBar(snackBar);
-                  Navigator.pop(context, text);
-                }),
+                textSubmitted: (text) => Navigator.pop(context, text)
               ),
             ),
           ],
@@ -76,4 +72,7 @@ class _SpecializationQueryState extends State<SpecializationQuery> {
     );
   }
 
+  @override
+  // TODO: implement wantKeepAlive
+  bool get wantKeepAlive => true;
 }

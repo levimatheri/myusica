@@ -24,7 +24,7 @@ class HomePage extends StatelessWidget {
                 margin: const EdgeInsets.only(top: 30.0, left: 20.0, right: 20.0),
                 child: Column(
                   children: <Widget>[
-                    TextFieldFocus(),
+                    Criteria(),
                   ],
                 ),
               ),
@@ -35,11 +35,12 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class TextFieldFocus extends StatefulWidget {
-  TextFieldFocusState createState() => new TextFieldFocusState();
+class Criteria extends StatefulWidget {
+  CriteriaState createState() => new CriteriaState();
 }
 
-class TextFieldFocusState extends State<TextFieldFocus> {
+class CriteriaState extends State<Criteria> with
+AutomaticKeepAliveClientMixin<Criteria> {
   FocusNode _locationFocusNode = new FocusNode();
   FocusNode _specFocusNode = new FocusNode();
   final locationEditingController = new TextEditingController();
@@ -47,7 +48,6 @@ class TextFieldFocusState extends State<TextFieldFocus> {
 
   @override
   void initState() {
-    super.initState();
     _locationFocusNode.addListener(
       () => _onFocusChange(
           _locationFocusNode, LocationQuery(), locationEditingController
@@ -58,8 +58,9 @@ class TextFieldFocusState extends State<TextFieldFocus> {
           _specFocusNode, SpecializationQuery(), specializationEditingController
       )
     );
-    locationEditingController.clear();
-    specializationEditingController.clear();
+//    locationEditingController.clear();
+//    specializationEditingController.clear();
+    super.initState();
   }
 
   void _onFocusChange(
@@ -81,12 +82,15 @@ class TextFieldFocusState extends State<TextFieldFocus> {
         builder: (context) => destination,
       ),
     ).then((result) {
-      if (result != null) controller.text = "$result";
+      if (result != null) {
+        controller.text = "$result";
+      }
     }); // put result in text field
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); //must call super.build to ensure persistence between tabs
     return new Container(
       child: Column(
         children: <Widget>[
@@ -123,4 +127,10 @@ class TextFieldFocusState extends State<TextFieldFocus> {
     locationEditingController.dispose();
     super.dispose();
   }
+
+  @override
+  // TODO: implement wantKeepAlive
+  bool get wantKeepAlive => true;
 }
+
+//518-000-916-7427
