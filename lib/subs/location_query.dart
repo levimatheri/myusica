@@ -8,31 +8,29 @@ class LocationQuery extends StatefulWidget {
 class _LocationQueryState extends State<LocationQuery> with
 AutomaticKeepAliveClientMixin<LocationQuery> {
   List<DropdownMenuItem<String>> results = [];
+
   String selected;
   String previous = "";
   String currentText = "";
+
   var isLoading = false;
   var isGoClicked = false;
+
   final locationTextController = TextEditingController();
+  FocusNode _locationFocusNode = new FocusNode();
+
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   void dispose() {
     locationTextController.dispose();
     super.dispose();
   }
-//  _fetchData() async {
-//    setState(() {
-//      isLoading = true;
-//    });
-//    final response =
-//        await http.get('https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=637%20Circle%20Hill%20Rd%20SE&inputtype=textquery&fields=formatted_address,name&key=AIzaSyCvu_XwzNjF33uBV5kS9XHJdpUMnqooFrA');
-//
-//    if (response.statusCode == 200) {
-//      //debugPrint(json.decode(response.body)['candidates'][0]['formatted_address'].toString());
-//      list = (json.decode(response.body)['candidates'] as List)
-//              .map((data) => new Candidates.from(data)).toList();
-//    } else throw Exception('Failed to load addresses');
-//  }
+
 
   _fetchData() async {
     results.clear();
@@ -65,6 +63,7 @@ AutomaticKeepAliveClientMixin<LocationQuery> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       appBar: AppBar(
         title: Text("Location"),
@@ -89,8 +88,9 @@ AutomaticKeepAliveClientMixin<LocationQuery> {
                       child: new Flexible (
                         child: TextField(
                           decoration: InputDecoration(
-                            hintText: "Enter location (upto street name for best results)",
+                            hintText: "Enter location",
                           ),
+                          focusNode: _locationFocusNode,
                           controller: locationTextController,
                         ),
                       ),
@@ -135,6 +135,22 @@ AutomaticKeepAliveClientMixin<LocationQuery> {
               Navigator.pop(context, selected);
             }
         );
+    } else {
+
     }
   }
 }
+
+//  _fetchData() async {
+//    setState(() {
+//      isLoading = true;
+//    });
+//    final response =
+//        await http.get('https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=637%20Circle%20Hill%20Rd%20SE&inputtype=textquery&fields=formatted_address,name&key=AIzaSyCvu_XwzNjF33uBV5kS9XHJdpUMnqooFrA');
+//
+//    if (response.statusCode == 200) {
+//      //debugPrint(json.decode(response.body)['candidates'][0]['formatted_address'].toString());
+//      list = (json.decode(response.body)['candidates'] as List)
+//              .map((data) => new Candidates.from(data)).toList();
+//    } else throw Exception('Failed to load addresses');
+//  }

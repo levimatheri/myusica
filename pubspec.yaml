@@ -22,6 +22,12 @@ dependencies:
   flutter_google_places: ^0.1.4
   http: ^0.12.0
   autocomplete_textfield: ^1.6.4
+  geolocator: ^2.1.1
+  android_intent: ^0.2.1
+  cloud_firestore: ^0.8.2+3
+  google_sign_in: ^3.2.4
+  googleapis: any
+  googleapis_auth: any
 
 dev_dependencies:
   flutter_test:

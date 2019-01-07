@@ -36,8 +36,6 @@ AutomaticKeepAliveClientMixin<SpecializationQuery> {
   SimpleAutoCompleteTextField specTextField;
   GlobalKey<AutoCompleteTextFieldState<String>> key = new GlobalKey();
 
-  var snackBar;
-
   @override
   void dispose() {
     specTextController.dispose();
@@ -46,6 +44,7 @@ AutomaticKeepAliveClientMixin<SpecializationQuery> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       //resizeToAvoidBottomPadding: false,
       appBar: AppBar(
