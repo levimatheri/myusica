@@ -18,7 +18,7 @@ class AvailabilityQueryState extends State<AvailabilityQuery> {
         var newMap = { 'Morning':false, 'Afternoon':false, 'Evening':false };
         slots[_days[i]] = newMap;
       }
-      
+
       timePickers = List<TimePicker>.generate(21, (i) =>  new TimePicker());
     }
   @override

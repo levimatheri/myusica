@@ -22,9 +22,15 @@ class _AvailabilityItemState extends State<AvailabilityItem> {
   @override
     Widget build(BuildContext context) {
       return ListTile(
-        leading: Text(_days[position]),
         title: Row(
-          children: checkboxes,
+          children: <Widget>[
+            Expanded(
+              child: Text(_days[position]),
+            ),
+            Row(
+              children: checkboxes,       
+            ),
+          ],
         ),
       );
     }
