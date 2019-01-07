@@ -1,3 +1,3 @@
 # myusica
 
-A Flutter application for connecting users to musicians to provide music for special occasions like weddings or Christmas parties.
+A Flutter application for connecting users to musicians in needs such as wedding music, musicals accompaniment, music lessons, etc.
