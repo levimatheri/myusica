@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_webservice/places.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LocationQuery extends StatefulWidget {
   _LocationQueryState createState() => _LocationQueryState();
@@ -19,19 +21,13 @@ AutomaticKeepAliveClientMixin<LocationQuery> {
   final locationTextController = TextEditingController();
   FocusNode _locationFocusNode = new FocusNode();
 
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
   @override
   void dispose() {
     locationTextController.dispose();
     super.dispose();
   }
-
-
+  
+  /// Get location options from Google Maps API
   _fetchData() async {
     results.clear();
     String searchQuery = locationTextController.text;
@@ -43,6 +39,7 @@ AutomaticKeepAliveClientMixin<LocationQuery> {
       isGoClicked = true;
     });
     previous = searchQuery;
+    // TODO: Get API key from database
     final places = new GoogleMapsPlaces(apiKey: 'AIzaSyCvu_XwzNjF33uBV5kS9XHJdpUMnqooFrA');
 
     PlacesSearchResponse response =
@@ -115,7 +112,6 @@ AutomaticKeepAliveClientMixin<LocationQuery> {
   }
 
   @override
-  // TODO: implement wantKeepAlive
   bool get wantKeepAlive => true;
 
   dynamic generateOptions() {

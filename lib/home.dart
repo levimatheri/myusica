@@ -16,8 +16,8 @@ class HomePage extends StatelessWidget {
         appBar: AppBar(
           bottom: TabBar(
               tabs: [
-                Tab(icon: Icon(Icons.list)),
-                Tab(icon: Icon(Icons.search)),
+                Tab(icon: Icon(Icons.list)), // List of matching Myusers
+                Tab(icon: Icon(Icons.search)), // Search criteria page
               ],
           ),
           title: Text("Home"),
@@ -40,6 +40,7 @@ class HomePage extends StatelessWidget {
   }
 }
 
+/// ==========RESULTS FROM DATABASE SEARCH================
 class Results extends StatefulWidget {
   ResultsState createState() => new ResultsState();
 }
@@ -56,6 +57,7 @@ class ResultsState extends State<Results> {
     }
 }
 
+/// =============SEARCH CRITERIA=====================
 class Criteria extends StatefulWidget {
   CriteriaState createState() => new CriteriaState();
 }
@@ -92,6 +94,8 @@ AutomaticKeepAliveClientMixin<Criteria> {
     _initPlatformState();
   }
 
+  /// open specific criteria [destination] page 
+  /// when user clicks on the corresponding criteria option [fn]
   void _onFocusChange(
       FocusNode fn, dynamic destination, TextEditingController controller
       ) async {
@@ -223,7 +227,7 @@ AutomaticKeepAliveClientMixin<Criteria> {
               },
             ),
             separator(20.0),
-            // TODO: Change me to a range slider
+            // TODO: Change me to a range slider or max
             new Container(
               alignment: Alignment.center,
               child: Text("\$${_sliderVal.toInt()}/hour"),
@@ -232,7 +236,11 @@ AutomaticKeepAliveClientMixin<Criteria> {
             new RaisedButton(
               child: Text('Availability'),
               onPressed: () => Navigator.push(context, 
-                          MaterialPageRoute(builder: (context) => AvailabilityQuery())),
+                MaterialPageRoute(builder: (context) => AvailabilityQuery())).then((result) {
+                  if (result != null) {
+                    print("$result['Sunday']");
+                  }
+                }),
             ),
           ],
         ),
@@ -265,34 +273,27 @@ AutomaticKeepAliveClientMixin<Criteria> {
     );
   }
 
-  // _openLocationSettings(String settingsName) {
-  //   var resultSettingsOpening;
-
-  //   try {
-  //     resultSettingsOpening =
-  //          AccessSettingsMenu.openSettings(settingsType: settingsName);
-  //   } catch (e) {
-  //     resultSettingsOpening = null;
-  //   }
-  // }
-
+  /// open location settings on device 
+  /// TODO: Implement an iOS version
   void _openLocationSettings() async {
     final AndroidIntent intent = new AndroidIntent(
         action: 'android.settings.LOCATION_SOURCE_SETTINGS',
-
     );
     await intent.launch();
   }
+
   @override
   void dispose() {
     locationEditingController.dispose();
     super.dispose();
   }
 
+  /// For neat separation between criteria options
   Container separator(double size) {
     return new Container(margin: EdgeInsets.only(bottom: size),);
   }
 
+  /// Ensures persistence while switching between tabs or pages
   @override
   bool get wantKeepAlive => true;
 }

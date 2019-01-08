@@ -10,28 +10,24 @@ class AvailabilityItem extends StatefulWidget {
 }
 
 class _AvailabilityItemState extends State<AvailabilityItem> {
-  var _days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  var _days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   int position;
-  List<Widget> checkboxes;
+  List<Widget> availabilityRow;
 
-  _AvailabilityItemState(int position, List<Widget> checkboxes) {
+  _AvailabilityItemState(int position, List<Widget> availabilityRow) {
     this.position = position;
-    this.checkboxes = checkboxes;
+    this.availabilityRow = availabilityRow;
   }
 
   @override
     Widget build(BuildContext context) {
-      return ListTile(
-        title: Row(
-          children: <Widget>[
-            Expanded(
-              child: Text(_days[position]),
-            ),
-            Row(
-              children: checkboxes,       
-            ),
-          ],
-        ),
-      );
+      return Row(
+        children: <Widget>[
+          Container(child: Text(_days[position]), margin: const EdgeInsets.only(right: 30.0)),
+          Row(
+            children: availabilityRow,
+          ),
+        ],
+      );        
     }
 }

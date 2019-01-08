@@ -72,6 +72,5 @@ AutomaticKeepAliveClientMixin<SpecializationQuery> {
   }
 
   @override
-  // TODO: implement wantKeepAlive
   bool get wantKeepAlive => true;
 }
