@@ -25,7 +25,7 @@ dependencies:
   geolocator: ^2.1.1
   android_intent: ^0.2.1
   cloud_firestore: ^0.8.2+3
-  firebase_auth: ^0.6.2+1
+  firebase_database: ^1.0.5
   google_sign_in: ^3.2.4
   googleapis: any
   googleapis_auth: any

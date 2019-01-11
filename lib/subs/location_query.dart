@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_webservice/places.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:myusica/helpers/dialogs.dart';
 
 class LocationQuery extends StatefulWidget {
+  static const routeName = '/location_query';
   _LocationQueryState createState() => _LocationQueryState();
 }
 
@@ -16,17 +17,25 @@ AutomaticKeepAliveClientMixin<LocationQuery> {
   String currentText = "";
 
   var isLoading = false;
+  var isMouseObtained = false;
   var isGoClicked = false;
 
   final locationTextController = TextEditingController();
   FocusNode _locationFocusNode = new FocusNode();
 
+  final databaseReference = FirebaseDatabase.instance.reference();
   @override
   void dispose() {
     locationTextController.dispose();
     super.dispose();
   }
   
+  /// Get *MOUSE* from database
+  Future<String> _fetchMouse() async {
+    DataSnapshot snapshot = await databaseReference.child("google_api").once();
+    return snapshot.value;
+  }
+
   /// Get location options from Google Maps API
   _fetchData() async {
     results.clear();
@@ -39,11 +48,22 @@ AutomaticKeepAliveClientMixin<LocationQuery> {
       isGoClicked = true;
     });
     previous = searchQuery;
-    // TODO: Get API key from database
-    final places = new GoogleMapsPlaces(apiKey: 'AIzaSyCvu_XwzNjF33uBV5kS9XHJdpUMnqooFrA');
+    
+    String mouse = await _fetchMouse();
+    final places = new GoogleMapsPlaces(apiKey: mouse);
 
     PlacesSearchResponse response =
       await places.searchByText(searchQuery);
+
+    // if no data came back
+    if (response.results.length == 0) {
+      showAlertDialog(context, ["Okay"], "No results found", "The search returned 0 results. Please try again");
+      setState(() {
+        isLoading = false;     
+        isGoClicked = false;
+      });
+      return;
+    }
     results = response.results.map((val) => new DropdownMenuItem(
         child: new Text(
             val.name + "...",
@@ -116,7 +136,7 @@ AutomaticKeepAliveClientMixin<LocationQuery> {
 
   dynamic generateOptions() {
     if (isGoClicked) {
-      return isLoading ? new CircularProgressIndicator() :
+      return isLoading && !isMouseObtained ? new CircularProgressIndicator() :
         new DropdownButton(
             value: selected,
             items: results,

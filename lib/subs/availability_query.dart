@@ -4,28 +4,19 @@ class AvailabilityQuery extends StatefulWidget {
   AvailabilityQueryState createState() => AvailabilityQueryState();
 }
 
-class AvailabilityQueryState extends State<AvailabilityQuery> 
-  with AutomaticKeepAliveClientMixin {
-  Map slots = Map<String, Map<String, bool>>();
+class AvailabilityQueryState extends State<AvailabilityQuery> {
+  Map _slots = Map<String, List<String>>();
   var _days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   var _times = ['Morning', 'Afternoon', 'Evening'];
   List<TimePicker> timePickers;
 
   AvailabilityQueryState() {
-    for (var i = 0; i < _days.length; i++) {
-      var newMap = { 'Morning':false, 'Afternoon':false, 'Evening':false };
-      slots[_days[i]] = newMap;
-    }
-
     // x ~/ y is same as  (x / y).toInt()
+
+    /// generate checkboxes
     timePickers = List<TimePicker>.generate(21, (i) =>  new TimePicker(this, _days[i ~/ 3], _times[i % 3]));
   }
-  // @override
-  //   void initState() {
-  //     super.initState();
 
-  //     print('Called initState()');
-  //   }
   @override
     Widget build(BuildContext context) {
       return Scaffold(
@@ -94,7 +85,9 @@ class AvailabilityQueryState extends State<AvailabilityQuery>
             Container(
               child: RaisedButton(
                 child: Text('Done'),
-                onPressed: () => Navigator.pop(context, slots),
+                onPressed: () {
+                  Navigator.pop(context, _slots);
+                }
               ),
             )
           ],
@@ -102,6 +95,7 @@ class AvailabilityQueryState extends State<AvailabilityQuery>
       );
     }
 
+  /// Build the checkboxes for user selection given [index] of day in [_days] list
   List<TimePicker> _buildAvailabilityList(int index) {
     List<TimePicker> availabilityItemList = List<TimePicker>(7);
     for (int i = 0, j = index; i < 7; j += 3, i++) {
@@ -110,15 +104,7 @@ class AvailabilityQueryState extends State<AvailabilityQuery>
     return availabilityItemList;
   }
 
-  // List<Widget> _buildTimesList(String heading, int timeIndex) {
-  //   List<Widget> timesList = List<Widget>(8);
-  //   timesList[0] = Text(heading, style: TextStyle(fontWeight: FontWeight.bold));
-  //   for (int t = 0; t < _days.length; timeIndex += 3, t++) {
-  //     timesList[t+1] = timePickers[timeIndex];
-  //   }
-  //   return timesList;
-  // }
-
+  /// Build day title from [_days] list
   List<Container> _buildDaysList() {
     List<Container> daysList = List<Container>(7);
     for (int d = 0; d < _days.length; d++) {
@@ -130,17 +116,18 @@ class AvailabilityQueryState extends State<AvailabilityQuery>
     return daysList;
   }
 
-  getSlots() {
-    return slots;
-  }
-
+  /// Sets slots Map to be returned to [Criteria] class on pop
   setSlots(bool value, String day, String time) {
-    Map<String, bool> toSet = slots[day];
-    toSet[time] = value;
-    slots[day] = toSet;
+    // old way
+    // Map<String, bool> toSet = _slots[day];
+    // toSet[time] = value;
+    // _slots[day] = toSet;
+
+    // eager memory effective way
+    if (_slots[day] == null) _slots[day] = new List<String>();
+    if (value) _slots[day].add(time);
+    else _slots[day].remove(time);
   }
-  @override
-    bool get wantKeepAlive => true;
 }
 
 class TimePicker extends StatefulWidget {
@@ -148,11 +135,15 @@ class TimePicker extends StatefulWidget {
   final String time;
   final AvailabilityQueryState aq;
 
-  // Pass instance of [AvailabilityQueryState] to ensure we set the same slots instance variable
+  // Pass instance of [AvailabilityQueryState] to ensure we set the same _slots instance variable
   TimePicker(AvailabilityQueryState aq, String day, String time) : day = day, time = time, aq = aq;
   TimePickerState createState() => new TimePickerState(aq, day, time);
 }
 
+/// Helper class to build selection checkboxes given:
+/// 1. Instance of [AvailabilityQueryState] to help with setting [_slots] Map
+/// 2. Day: between Sunday to Saturday
+/// 3. Time: Morning, Afternoon and Evening
 class TimePickerState extends State<TimePicker> {
   String day;
   String time;
@@ -165,8 +156,10 @@ class TimePickerState extends State<TimePicker> {
   }
   @override
     Widget build(BuildContext context) {
+      // return a checkbox
       return new Checkbox(value: checked, 
         onChanged: (bool value) {
+          // when clicked set _slots to have the day and time selected
           setState(() {
             checked = value;    
             aq.setSlots(value, day, time);
