@@ -158,7 +158,7 @@ AutomaticKeepAliveClientMixin<Criteria> {
   @override
   Widget build(BuildContext context) {
     super.build(context); //must call super.build to ensure persistence between tabs
-    return _positionIsLoading ? CircularProgressIndicator() :
+    return
       Scrollbar(
         child: SingleChildScrollView(
           child: ConstrainedBox(
@@ -174,7 +174,7 @@ AutomaticKeepAliveClientMixin<Criteria> {
                     "Location",
                     style: Theme.of(context).textTheme.title,
                   ),
-                  new TextField(
+                  _positionIsLoading ? CircularProgressIndicator() : new TextField(
                     decoration: InputDecoration(
                         hintText: "Input location"
                     ),
@@ -182,36 +182,39 @@ AutomaticKeepAliveClientMixin<Criteria> {
                     controller: locationEditingController,
                   ),
                   separator(20.0),
-                  new RaisedButton(
-                    child: Text("Use current location"),
-                    onPressed: _positionIsLoading ? null : () {
-                      Geolocator().checkGeolocationPermissionStatus()
-                          .then((permStatus) async {
-                        if (permStatus == GeolocationStatus.denied) {
-                          showAlertDialog(
-                            ["Close", ""],
-                            "Location access denied",
-                            "Allow access for this app using device settings");
-                        }
-                        if (permStatus == GeolocationStatus.disabled) {
-                        // _openLocationSettings();
-                          showAlertDialog(
-                              ["Okay", ""],
-                              "Location services disabled",
-                              "Turn on location then try again");
-                        }
-                        if (permStatus == GeolocationStatus.granted) {
-                          await _initPlatformState();
-                          locationEditingController.text = _position.toString();
-                        }
-                        if (permStatus == GeolocationStatus.unknown) {
-                          showAlertDialog(
+                  ButtonTheme(
+                    buttonColor: Colors.lightBlue,
+                    child: new RaisedButton(
+                      child: Text("Use current location"),
+                      onPressed: _positionIsLoading ? null : () {
+                        Geolocator().checkGeolocationPermissionStatus()
+                            .then((permStatus) async {
+                          if (permStatus == GeolocationStatus.denied) {
+                            showAlertDialog(
                               ["Close", ""],
-                              "Unknown error",
-                              "Please contact developer");
-                        }
-                      });
-                    }
+                              "Location access denied",
+                              "Allow access for this app using device settings");
+                          }
+                          if (permStatus == GeolocationStatus.disabled) {
+                          // _openLocationSettings();
+                            showAlertDialog(
+                                ["Okay", ""],
+                                "Location services disabled",
+                                "Turn on location then try again");
+                          }
+                          if (permStatus == GeolocationStatus.granted) {
+                            await _initPlatformState();
+                            locationEditingController.text = _position.toString();
+                          }
+                          if (permStatus == GeolocationStatus.unknown) {
+                            showAlertDialog(
+                                ["Close", ""],
+                                "Unknown error",
+                                "Please contact developer");
+                          }
+                        });
+                      }
+                    ),
                   ),
                   separator(30.0),
                   new Text(
@@ -250,19 +253,23 @@ AutomaticKeepAliveClientMixin<Criteria> {
                     style: Theme.of(context).textTheme.title
                   ),
                   separator(10.0),
-                  new RaisedButton(
-                    child: Text('Click to select'),
-                    onPressed: () => Navigator.push(context, 
-                      MaterialPageRoute(settings: RouteSettings(name: Criteria.routeName),
-                      builder: (context) => AvailabilityQuery())).then((result) {
-                        if (result != null) {
-                          print("$result");
-                        }
-                      }),
+                  ButtonTheme(
+                    buttonColor: Colors.lightBlue,
+                    child: new RaisedButton(
+                      child: Text('Click to select'),
+                      onPressed: () => Navigator.push(context, 
+                        MaterialPageRoute(settings: RouteSettings(name: Criteria.routeName),
+                        builder: (context) => AvailabilityQuery())).then((result) {
+                          if (result != null) {
+                            print("$result");
+                          }
+                        }),
+                    ),
                   ),
                   separator(30.0),
                   ButtonTheme(
                     minWidth: 300.0,
+                    buttonColor: Color(0xEFFFA500),
                     child: new RaisedButton(
                       child: Text("SEARCH"),
                       onPressed: () => _completeSearch(),
@@ -332,6 +339,7 @@ AutomaticKeepAliveClientMixin<Criteria> {
   @override
   void dispose() {
     locationEditingController.dispose();
+    specializationEditingController.dispose();
     super.dispose();
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_webservice/places.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:myusica/helpers/dialogs.dart';
 
 class LocationQuery extends StatefulWidget {
@@ -20,20 +21,17 @@ AutomaticKeepAliveClientMixin<LocationQuery> {
   var isMouseObtained = false;
   var isGoClicked = false;
 
+  final Firestore db = Firestore.instance;
+
   final locationTextController = TextEditingController();
   FocusNode _locationFocusNode = new FocusNode();
+  //final databaseReference = FirebaseDatabase.instance.reference();
 
-  final databaseReference = FirebaseDatabase.instance.reference();
-  @override
-  void dispose() {
-    locationTextController.dispose();
-    super.dispose();
-  }
-  
   /// Get *MOUSE* from database
-  Future<String> _fetchMouse() async {
-    DataSnapshot snapshot = await databaseReference.child("google_api").once();
-    return snapshot.value;
+  Future<DocumentSnapshot> _fetchMouse() async {
+    // DataSnapshot snapshot = await databaseReference.child("google_api").once();
+    // return snapshot.value;
+    return await db.collection('api_keys').document('diYQMfrSCICXrT660Hzc').get();
   }
 
   /// Get location options from Google Maps API
@@ -49,8 +47,8 @@ AutomaticKeepAliveClientMixin<LocationQuery> {
     });
     previous = searchQuery;
     
-    String mouse = await _fetchMouse();
-    final places = new GoogleMapsPlaces(apiKey: mouse);
+    DocumentSnapshot mouseSnapshot = await _fetchMouse();
+    final places = new GoogleMapsPlaces(apiKey: mouseSnapshot['google_maps']);
 
     PlacesSearchResponse response =
       await places.searchByText(searchQuery);
@@ -133,6 +131,12 @@ AutomaticKeepAliveClientMixin<LocationQuery> {
 
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void dispose() {
+    locationTextController.dispose();
+    super.dispose();
+  }
 
   dynamic generateOptions() {
     if (isGoClicked) {
