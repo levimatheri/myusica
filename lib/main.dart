@@ -35,19 +35,19 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   @override
-    void initState() {
-      super.initState();
-      startTime();
-    }
+  void initState() {
+    super.initState();
+    startTime();
+  }
 
   @override
-    Widget build(BuildContext context) {
-      return new Scaffold(
-        body: new Center(
-          child: new Image.asset('images/Myusica logo.png'),
-        ),
-      );
-    }
+  Widget build(BuildContext context) {
+    return new Scaffold(
+      body: new Center(
+        child: new Image.asset('images/Myusica logo.png'),
+      ),
+    );
+  }
 }
 
 //keytool -list -v -keystore "C:\Users\Levi\.android\debug.keystore" -alias androiddebugkey -storepass android -keypass android

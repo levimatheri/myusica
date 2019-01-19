@@ -1,13 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 import 'package:myusica/subs/location_query.dart';
 import 'package:myusica/subs/specialization_query.dart';
+import 'package:myusica/subs/availability_query.dart';
+import 'package:myusica/helpers/myuser_card.dart';
+import 'package:myusica/helpers/myuser.dart';
+
 import 'package:geolocator/geolocator.dart';
-import 'package:flutter/services.dart';
 import 'package:android_intent/android_intent.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:myusica/subs/availability_query.dart';
 
-class HomePage extends StatelessWidget {
+
+class HomePage extends StatefulWidget {
+  HomePage({Key key}) : super(key: key);
+  @override
+  HomePageState createState() => new HomePageState();
+}
+class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin  {
+  // static so that same stream can be transmitted through tabs
+  static Stream<QuerySnapshot> stream;
+
+  final List<Tab> homeTabs = <Tab>[
+    Tab(text: 'Results', icon: Icon(Icons.list)), // List of matching Myusers
+    Tab(text: 'Search', icon: Icon(Icons.search)), // Search criteria page
+  ];
+  TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = new TabController(vsync: this, length: homeTabs.length);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController (
@@ -15,19 +46,20 @@ class HomePage extends StatelessWidget {
       child: Scaffold (
         appBar: AppBar(
           bottom: TabBar(
-              tabs: [
-                Tab(icon: Icon(Icons.list)), // List of matching Myusers
-                Tab(icon: Icon(Icons.search)), // Search criteria page
-              ],
+            controller: _tabController,
+            tabs: homeTabs,
           ),
           title: Text("Home"),
         ),
         body: TabBarView(
+          controller: _tabController,
             children: [
-              Center( child: Text("Page 1") ),
+              Container(
+                child: Results()
+              ),
               Container (
                 margin: EdgeInsets.only(top: 30.0, left: 20.0, right: 20.0),
-                child: Criteria(),
+                child: Criteria(_tabController),
               ),
             ],
         ),
@@ -38,23 +70,40 @@ class HomePage extends StatelessWidget {
 
 /// ==========RESULTS FROM DATABASE SEARCH================
 class Results extends StatefulWidget {
+  // final Stream<QuerySnapshot> stream;
+
+  // Results(Stream<QuerySnapshot> stream) : stream = stream;
   ResultsState createState() => new ResultsState();
 }
 
 class ResultsState extends State<Results> {
+  /// Build the myuser results based on the stream from the database
   @override
-    Widget build(BuildContext context) {
-      return new Container(
-
-        child: new StreamBuilder<QuerySnapshot>(
-          //stream: Firestore.instance,
-        ),
-      );
-    }
+  Widget build(BuildContext context) {
+    return Container(
+      child: StreamBuilder(
+        stream: HomePageState.stream,
+        builder: (BuildContext context, 
+            AsyncSnapshot<QuerySnapshot> snapshot) {
+          print(snapshot.hasData);
+          return snapshot.hasData ? ListView(
+            children: snapshot.data.documents.map((document) {
+              return MyuserItem(
+                myuser: Myuser.fromMap(document.data, document.documentID),
+              );
+            }).toList(),
+          ) : Container(); //** replace with progress indicator **/
+        }
+      ),
+    );
+  }
 }
 
 /// =============SEARCH CRITERIA=====================
 class Criteria extends StatefulWidget {
+  final TabController tabController;
+  Criteria(TabController tabController) : tabController = tabController;
+
   static const routeName = "/criteria";
   CriteriaState createState() => new CriteriaState();
 }
@@ -67,14 +116,17 @@ AutomaticKeepAliveClientMixin<Criteria> {
   final locationEditingController = new TextEditingController();
   final specializationEditingController = new TextEditingController();
 
-  double _sliderVal = 5.0;
+  double _chargeSliderVal = 5.0;
+  double _distSliderVal = 5.0;
 
   Position _position;
   var _positionIsLoading = false;
 
+  // Availability map
+  Map<String, List<String>> _availabilityMap = new Map<String, List<String>>();
   /// Results map
   Map<String, dynamic> finalCriteria = Map();
-  List<String> criteria = ['Location', 'Specialization', 'Max Charge', 'Availability'];
+  List<String> criteria = ['Location', 'Specialization', 'Max Charge', 'Distance', 'Availability'];
 
   // constructor
   CriteriaState() {
@@ -234,18 +286,38 @@ AutomaticKeepAliveClientMixin<Criteria> {
                   ),
                   new Slider(
                     activeColor: Colors.indigoAccent,
-                    value: _sliderVal,
-                    min: 0.0,
+                    value: _chargeSliderVal,
+                    min: 5.0,
                     max: 100.0,
                     divisions: 20,
                     onChanged: (double newCharge) {
-                      setState(() => _sliderVal = newCharge);
+                      setState(() => _chargeSliderVal = newCharge);
                     },
                   ),
                   separator(10.0),
                   new Container(
                     alignment: Alignment.center,
-                    child: Text("\$${_sliderVal.toInt()}/hour"),
+                    child: Text("\$${_chargeSliderVal.toInt()}/hour"),
+                  ),
+                  separator(30.0),
+                  new Text(
+                    "Distance",
+                    style: Theme.of(context).textTheme.title,
+                  ),
+                  new Slider(
+                    activeColor: Colors.indigoAccent,
+                    value: _distSliderVal,
+                    min: 0.0,
+                    max: 100.0,
+                    divisions: 20,
+                    onChanged: (double newDist) {
+                      setState(() => _distSliderVal = newDist);
+                    },
+                  ),
+                  separator(10.0),
+                  new Container(
+                    alignment: Alignment.center,
+                    child: Text("${_distSliderVal.toInt()} miles"),
                   ),
                   separator(30.0),
                   new Text(
@@ -261,12 +333,13 @@ AutomaticKeepAliveClientMixin<Criteria> {
                         MaterialPageRoute(settings: RouteSettings(name: Criteria.routeName),
                         builder: (context) => AvailabilityQuery())).then((result) {
                           if (result != null) {
-                            print("$result");
+                            // print("$result");
+                            _availabilityMap = result;
                           }
                         }),
                     ),
                   ),
-                  separator(30.0),
+                  separator(10.0),
                   ButtonTheme(
                     minWidth: 300.0,
                     buttonColor: Color(0xEFFFA500),
@@ -284,9 +357,20 @@ AutomaticKeepAliveClientMixin<Criteria> {
   }
 
   void _completeSearch() {
+    final CollectionReference users = Firestore.instance.collection("users");
     // feed our finalCriteria map with user selections
+    _feedFinalCriteria();
     // Call database to fetch myusers matching the criteria
+    //Stream<QuerySnapshot> stream;
+    HomePageState.stream = users
+                .where("type", isEqualTo: "myuser")
+                .where("typical_hourly_charge", isLessThanOrEqualTo: finalCriteria['Max Charge'])
+                // .where("specializations", arrayContains: finalCriteria['Specialization'])
+                // .where("specialization", arrayContains: finalCriteria['Specialization'])
+                .snapshots();
     // Set Results tab with the appropriate myusers
+    widget.tabController.animateTo((widget.tabController.index + 1) % 2);
+    
   }
 
   void _feedFinalCriteria() {
@@ -295,8 +379,14 @@ AutomaticKeepAliveClientMixin<Criteria> {
     // get input specialization value
     finalCriteria['Specialization'] = specializationEditingController.text;
     // get Max Charge slider value
-    finalCriteria['Max Charge'] = _sliderVal;
+    finalCriteria['Max Charge'] = _chargeSliderVal;
+    // get distance slider value
+    finalCriteria['Distance'] = _distSliderVal;
     // get Availability Map
+    finalCriteria['Availability'] = _availabilityMap;
+  }
+
+  bool _checkMatch() {
 
   }
 

@@ -18,82 +18,82 @@ class AvailabilityQueryState extends State<AvailabilityQuery> {
   }
 
   @override
-    Widget build(BuildContext context) {
-      return Scaffold(
-        appBar: AppBar(
-          title: Text('Availability'),
-        ),
-        body: Column(
-          children: <Widget>[
-            Container(
-              margin: const EdgeInsets.only(top: 30.0, left: 15.0),
-              child: Text(
-                'Select preferable availability times for your prospective Myuser',
-                style: TextStyle(fontSize: 14.0, fontStyle: FontStyle.italic),
-              ),
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Availability'),
+      ),
+      body: Column(
+        children: <Widget>[
+          Container(
+            margin: const EdgeInsets.only(top: 30.0, left: 15.0),
+            child: Text(
+              'Select preferable availability times for your prospective Myuser',
+              style: TextStyle(fontSize: 14.0, fontStyle: FontStyle.italic),
             ),
-            Container(
-              margin: const EdgeInsets.only(top: 20.0, left: 15.0),
-              child: Table(
-                children: [
-                  TableRow(
-                    children: [
-                      TableCell(
-                        child: Text('Day', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                      TableCell(
-                        child: Text('Morning', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                      TableCell(
-                        child: Text('Afternoon', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                      TableCell(
-                        child: Text('Evening', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                    ], 
-                  ),
-                  TableRow(
-                    children: [
-                      TableCell(
-                        child: Container(
-                          margin: const EdgeInsets.only(top: 16.0),
-                          child: Column(
-                            children: _buildDaysList(),
-                          ), 
-                        ),
-                      ),
-                      TableCell(
+          ),
+          Container(
+            margin: const EdgeInsets.only(top: 20.0, left: 15.0),
+            child: Table(
+              children: [
+                TableRow(
+                  children: [
+                    TableCell(
+                      child: Text('Day', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                    TableCell(
+                      child: Text('Morning', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                    TableCell(
+                      child: Text('Afternoon', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                    TableCell(
+                      child: Text('Evening', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ], 
+                ),
+                TableRow(
+                  children: [
+                    TableCell(
+                      child: Container(
+                        margin: const EdgeInsets.only(top: 16.0),
                         child: Column(
-                          children: _buildAvailabilityList(0),
-                        ),                              
+                          children: _buildDaysList(),
+                        ), 
                       ),
-                      TableCell(
-                        child: Column(
-                          children: _buildAvailabilityList(1),
-                        ),                              
-                      ),
-                      TableCell(
-                        child: Column(
-                          children: _buildAvailabilityList(2),
-                        ),                              
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                    TableCell(
+                      child: Column(
+                        children: _buildAvailabilityList(0),
+                      ),                              
+                    ),
+                    TableCell(
+                      child: Column(
+                        children: _buildAvailabilityList(1),
+                      ),                              
+                    ),
+                    TableCell(
+                      child: Column(
+                        children: _buildAvailabilityList(2),
+                      ),                              
+                    ),
+                  ],
+                ),
+              ],
             ),
-            Container(
-              child: RaisedButton(
-                child: Text('Done'),
-                onPressed: () {
-                  Navigator.pop(context, _slots);
-                }
-              ),
-            )
-          ],
-        ),
-      );
-    }
+          ),
+          Container(
+            child: RaisedButton(
+              child: Text('Done'),
+              onPressed: () {
+                Navigator.pop(context, _slots);
+              }
+            ),
+          )
+        ],
+      ),
+    );
+  }
 
   /// Build the checkboxes for user selection given [index] of day in [_days] list
   List<TimePicker> _buildAvailabilityList(int index) {
@@ -155,15 +155,15 @@ class TimePickerState extends State<TimePicker> {
     this.aq = aq;
   }
   @override
-    Widget build(BuildContext context) {
-      // return a checkbox
-      return new Checkbox(value: checked, 
-        onChanged: (bool value) {
-          // when clicked set _slots to have the day and time selected
-          setState(() {
-            checked = value;    
-            aq.setSlots(value, day, time);
-          });
-      });
-    }
+  Widget build(BuildContext context) {
+    // return a checkbox
+    return new Checkbox(value: checked, 
+      onChanged: (bool value) {
+        // when clicked set _slots to have the day and time selected
+        setState(() {
+          checked = value;    
+          aq.setSlots(value, day, time);
+        });
+    });
+  }
 }

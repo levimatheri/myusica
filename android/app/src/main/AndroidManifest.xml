@@ -15,7 +15,7 @@
          FlutterApplication and put your custom class here. -->
     <application
         android:name="io.flutter.app.FlutterApplication"
-        android:label="myusica"
+        android:label="Myusica"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
@@ -34,15 +34,15 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
-                <action android:name="android.intent.action.VIEW" />
+                <!-- <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
 
                 <data android:scheme="http"
                        android:host="www.example.com"
-                        android:pathPrefix="/myusica" />
+                        android:pathPrefix="/Myusica" />
                 <data android:scheme="example"
-                    android:host="myusica" />
+                    android:host="Myusica" /> -->
             </intent-filter>
         </activity>
     </application>
