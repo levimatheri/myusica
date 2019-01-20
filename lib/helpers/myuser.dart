@@ -1,3 +1,5 @@
+
+
 class Myuser {
   final String id;
   final String name;
@@ -22,11 +24,5 @@ class Myuser {
     type: attrs['type']
   );
 
-  // Future<String> coordinatesFromCityState(String cityName, String stateName) async {
-  //   final query = cityName + ", " + stateName;
-  //   var addresses = await Geocoder.local.findAddressesFromQuery(query);
-  //   var first = addresses.first;
-
-  //   return first.coordinates.toString();
-  // }
+  
 }

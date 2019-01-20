@@ -10,16 +10,18 @@ import 'package:myusica/helpers/myuser.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:android_intent/android_intent.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'package:latlong/latlong.dart';
 
 class HomePage extends StatefulWidget {
   HomePage({Key key}) : super(key: key);
   @override
   HomePageState createState() => new HomePageState();
 }
-class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin  {
+class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   // static so that same stream can be transmitted through tabs
   static Stream<QuerySnapshot> stream;
+  static String currCoordinates;
+  static var availability;
 
   final List<Tab> homeTabs = <Tab>[
     Tab(text: 'Results', icon: Icon(Icons.list)), // List of matching Myusers
@@ -66,6 +68,10 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin 
       ),
     );
   }
+
+  @override
+    // TODO: implement wantKeepAlive
+    bool get wantKeepAlive => true;
 }
 
 /// ==========RESULTS FROM DATABASE SEARCH================
@@ -76,27 +82,70 @@ class Results extends StatefulWidget {
   ResultsState createState() => new ResultsState();
 }
 
-class ResultsState extends State<Results> {
+class ResultsState extends State<Results> with AutomaticKeepAliveClientMixin {
   /// Build the myuser results based on the stream from the database
+  /// Filter by location and availability from the stream
+  bool isLoading = false;
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  bool _areAvailabilitiesSame(Map<String, dynamic> myuserAvail, Map<String, List<String>> searchAvail) {
+    if (searchAvail.isEmpty) return true;
+    List<String> searchAvailKeys = searchAvail.keys.toList();
+    bool areSame = false;
+    searchAvailKeys.forEach((key) {
+      if (myuserAvail.containsKey(key)) {
+        searchAvail[key].forEach((val) {
+          areSame = areSame || myuserAvail[key].containsKey(val.toLowerCase());
+        });
+      }
+    });
+    return areSame;
+  }
+
+  List<Widget> _buildMyuserItems(List<DocumentSnapshot> docs) {
+    List<String> toRemove = [];
+    docs.forEach((d) {
+      if(!_areAvailabilitiesSame(
+        Map<String, dynamic>.from(d.data['availability']), 
+        HomePageState.availability)) toRemove.add(d.documentID);
+    });
+    docs.removeWhere((d) => toRemove.contains(d.documentID));
+    return docs.map((document) {
+      // List<String> coordinates = (document.data['coordinates']).split(",");
+      // List<String> currCoordinates = HomePageState.currCoordinates.split(",");
+      return MyuserItem(
+        myuser: Myuser.fromMap(document.data, document.documentID),
+      ); 
+    }).toList();
+  }
+
+  bool _isWithinDistance(double lat1, double long1, double lat2, double long2, double acceptableRange) {
+    final double dist = Distance().as(LengthUnit.Mile,
+          new LatLng(lat1, long1), new LatLng(lat2, long2));
+    //print(dist);
+    return dist <= acceptableRange;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return isLoading ? Center(child: CircularProgressIndicator(),) : Container(
       child: StreamBuilder(
         stream: HomePageState.stream,
         builder: (BuildContext context, 
             AsyncSnapshot<QuerySnapshot> snapshot) {
-          print(snapshot.hasData);
           return snapshot.hasData ? ListView(
-            children: snapshot.data.documents.map((document) {
-              return MyuserItem(
-                myuser: Myuser.fromMap(document.data, document.documentID),
-              );
-            }).toList(),
+            children: _buildMyuserItems(snapshot.data.documents)
           ) : Container(); //** replace with progress indicator **/
         }
       ),
     );
   }
+
+  @override
+    bool get wantKeepAlive => true;
 }
 
 /// =============SEARCH CRITERIA=====================
@@ -117,7 +166,7 @@ AutomaticKeepAliveClientMixin<Criteria> {
   final specializationEditingController = new TextEditingController();
 
   double _chargeSliderVal = 5.0;
-  double _distSliderVal = 5.0;
+  static double _distSliderVal = 5.0;
 
   Position _position;
   var _positionIsLoading = false;
@@ -356,26 +405,80 @@ AutomaticKeepAliveClientMixin<Criteria> {
       );    
   }
 
-  void _completeSearch() {
+  void _completeSearch() async {
     final CollectionReference users = Firestore.instance.collection("users");
     // feed our finalCriteria map with user selections
     _feedFinalCriteria();
+    // translate location input to coordinates
+    String currCoordinates = "";
+    if (!locationEditingController.text.startsWith("Lat:"))
+      currCoordinates = await _addressToCoordinates(finalCriteria['Location']);
+    else currCoordinates = finalCriteria['Location'];
+
+    HomePageState.currCoordinates = currCoordinates;
+    HomePageState.availability = _availabilityMap;
     // Call database to fetch myusers matching the criteria
     //Stream<QuerySnapshot> stream;
     HomePageState.stream = users
                 .where("type", isEqualTo: "myuser")
                 .where("typical_hourly_charge", isLessThanOrEqualTo: finalCriteria['Max Charge'])
+                .where("specializations", arrayContains: finalCriteria['Specialization'])
                 // .where("specializations", arrayContains: finalCriteria['Specialization'])
-                // .where("specialization", arrayContains: finalCriteria['Specialization'])
                 .snapshots();
+
+    //_finishFilter();
     // Set Results tab with the appropriate myusers
-    widget.tabController.animateTo((widget.tabController.index + 1) % 2);
-    
+    // Navigator.push(
+    //   context,
+    //   MaterialPageRoute(
+    //     builder: (context) => HomePage(),
+    //   ));
+    widget.tabController.animateTo(
+      (widget.tabController.index + 1) % 2,
+      duration: Duration(seconds: 5),
+    );   
+  }
+
+  // void _finishFilter() {
+  //   if (HomePageState.stream != null) {
+  //     HomePageState.stream.forEach((snapshot) {
+  //       snapshot.documents.forEach((document) async {
+  //         bool isWithinDistance = await _isWithinDistance(
+  //           document.data['coordinates'], HomePageState.currCoordinates);
+  //         if (!isWithinDistance) {
+  //           snapshot.documents.remove(document);
+  //         }
+  //       });
+  //     });
+  //   }
+  // }
+
+  
+
+  Future<String> _addressToCoordinates(String address) async {
+    List<Placemark> placemark = await Geolocator().placemarkFromAddress(address);
+    String coordinates = "";
+    placemark.forEach((p) {
+      coordinates = p.position.latitude.toString() + ", " + p.position.longitude.toString();
+    });
+    return coordinates;
   }
 
   void _feedFinalCriteria() {
+    
     // get input location value
-    finalCriteria['Location'] = locationEditingController.text;
+    if (locationEditingController.text.startsWith("Lat:")) {
+      var buffer = StringBuffer();
+      locationEditingController.text.split(",").forEach((s) {
+        buffer.write(s.split(":")[1]);
+        buffer.write(",");
+      });
+
+      String loc = buffer.toString();
+      finalCriteria['Location'] = loc.substring(0, loc.length-1);
+      //print(finalCriteria['Location']);
+    }
+    else finalCriteria['Location'] = locationEditingController.text;
     // get input specialization value
     finalCriteria['Specialization'] = specializationEditingController.text;
     // get Max Charge slider value
