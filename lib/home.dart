@@ -70,15 +70,11 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin,
   }
 
   @override
-    // TODO: implement wantKeepAlive
     bool get wantKeepAlive => true;
 }
 
 /// ==========RESULTS FROM DATABASE SEARCH================
 class Results extends StatefulWidget {
-  // final Stream<QuerySnapshot> stream;
-
-  // Results(Stream<QuerySnapshot> stream) : stream = stream;
   ResultsState createState() => new ResultsState();
 }
 
@@ -91,8 +87,10 @@ class ResultsState extends State<Results> with AutomaticKeepAliveClientMixin {
     super.initState();
   }
 
-  bool _areAvailabilitiesSame(Map<String, dynamic> myuserAvail, Map<String, List<String>> searchAvail) {
-    if (searchAvail.isEmpty) return true;
+  /// check if availabilities pass
+  bool _areAvailabilitiesSame(Map<String, dynamic> myuserAvail, 
+                              Map<String, List<String>> searchAvail) {
+    if (searchAvail.isEmpty) return true; // if availability is not specified, do not bother
     List<String> searchAvailKeys = searchAvail.keys.toList();
     bool areSame = false;
     searchAvailKeys.forEach((key) {
@@ -105,40 +103,56 @@ class ResultsState extends State<Results> with AutomaticKeepAliveClientMixin {
     return areSame;
   }
 
+  /// check if the location of a prospective myuser is within the select distance range
+  bool _isWithinDistance(double lat1, double long1, double lat2, double long2, double acceptableRange) {
+    final double dist = Distance().as(LengthUnit.Mile,
+          new LatLng(lat1, long1), new LatLng(lat2, long2));
+    return dist <= acceptableRange;
+  }
+
+  /// go through document snapshots from database
   List<Widget> _buildMyuserItems(List<DocumentSnapshot> docs) {
+
+    /// filter through documents and remove what doesn't match availability and distance range
     List<String> toRemove = [];
     docs.forEach((d) {
+      List<String> myuserCoordinates = (d.data['coordinates']).split(",");
+      List<String> currCoordinates = HomePageState.currCoordinates.split(",");
+      // check availability
       if(!_areAvailabilitiesSame(
         Map<String, dynamic>.from(d.data['availability']), 
         HomePageState.availability)) toRemove.add(d.documentID);
+      // check distance
+      if(!_isWithinDistance(
+        double.parse(myuserCoordinates[0]), 
+        double.parse(myuserCoordinates[1]), 
+        double.parse(currCoordinates[0]), 
+        double.parse(currCoordinates[1]), 
+        CriteriaState._distSliderVal)) toRemove.add(d.documentID);
     });
+
+    // remove what doesn't match. We feed the unwanted to an external list to prevent
+    // the error of trying to remove while iterating
     docs.removeWhere((d) => toRemove.contains(d.documentID));
+
+    // Map the prospective myuser(s) to a MyuserItem to be fed into the ListView
     return docs.map((document) {
-      // List<String> coordinates = (document.data['coordinates']).split(",");
-      // List<String> currCoordinates = HomePageState.currCoordinates.split(",");
       return MyuserItem(
         myuser: Myuser.fromMap(document.data, document.documentID),
       ); 
     }).toList();
   }
 
-  bool _isWithinDistance(double lat1, double long1, double lat2, double long2, double acceptableRange) {
-    final double dist = Distance().as(LengthUnit.Mile,
-          new LatLng(lat1, long1), new LatLng(lat2, long2));
-    //print(dist);
-    return dist <= acceptableRange;
-  }
-
   @override
   Widget build(BuildContext context) {
-    return isLoading ? Center(child: CircularProgressIndicator(),) : Container(
+    return Container(
       child: StreamBuilder(
         stream: HomePageState.stream,
         builder: (BuildContext context, 
             AsyncSnapshot<QuerySnapshot> snapshot) {
           return snapshot.hasData ? ListView(
             children: _buildMyuserItems(snapshot.data.documents)
-          ) : Container(); //** replace with progress indicator **/
+          ) : Center(child: Text("No Myusers found."),);
         }
       ),
     );
@@ -269,7 +283,6 @@ AutomaticKeepAliveClientMixin<Criteria> {
             child: Container(
               margin: const EdgeInsets.only(right: 20.0),
               child: Column(
-                //crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   new Text(
                     "Location",
@@ -405,10 +418,13 @@ AutomaticKeepAliveClientMixin<Criteria> {
       );    
   }
 
+  /// Complete the search conveyer and show user to results
   void _completeSearch() async {
+    // user database
     final CollectionReference users = Firestore.instance.collection("users");
     // feed our finalCriteria map with user selections
     _feedFinalCriteria();
+
     // translate location input to coordinates
     String currCoordinates = "";
     if (!locationEditingController.text.startsWith("Lat:"))
@@ -418,43 +434,20 @@ AutomaticKeepAliveClientMixin<Criteria> {
     HomePageState.currCoordinates = currCoordinates;
     HomePageState.availability = _availabilityMap;
     // Call database to fetch myusers matching the criteria
-    //Stream<QuerySnapshot> stream;
     HomePageState.stream = users
                 .where("type", isEqualTo: "myuser")
                 .where("typical_hourly_charge", isLessThanOrEqualTo: finalCriteria['Max Charge'])
                 .where("specializations", arrayContains: finalCriteria['Specialization'])
                 // .where("specializations", arrayContains: finalCriteria['Specialization'])
                 .snapshots();
-
-    //_finishFilter();
-    // Set Results tab with the appropriate myusers
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(
-    //     builder: (context) => HomePage(),
-    //   ));
+    // Navigate to Results tab
     widget.tabController.animateTo(
       (widget.tabController.index + 1) % 2,
       duration: Duration(seconds: 5),
     );   
   }
 
-  // void _finishFilter() {
-  //   if (HomePageState.stream != null) {
-  //     HomePageState.stream.forEach((snapshot) {
-  //       snapshot.documents.forEach((document) async {
-  //         bool isWithinDistance = await _isWithinDistance(
-  //           document.data['coordinates'], HomePageState.currCoordinates);
-  //         if (!isWithinDistance) {
-  //           snapshot.documents.remove(document);
-  //         }
-  //       });
-  //     });
-  //   }
-  // }
-
-  
-
+  /// Convert an address to coordinates. Useful when we'll want to find distances
   Future<String> _addressToCoordinates(String address) async {
     List<Placemark> placemark = await Geolocator().placemarkFromAddress(address);
     String coordinates = "";
@@ -464,8 +457,8 @@ AutomaticKeepAliveClientMixin<Criteria> {
     return coordinates;
   }
 
+  /// Gather all user search criteria input into a map
   void _feedFinalCriteria() {
-    
     // get input location value
     if (locationEditingController.text.startsWith("Lat:")) {
       var buffer = StringBuffer();
@@ -476,7 +469,6 @@ AutomaticKeepAliveClientMixin<Criteria> {
 
       String loc = buffer.toString();
       finalCriteria['Location'] = loc.substring(0, loc.length-1);
-      //print(finalCriteria['Location']);
     }
     else finalCriteria['Location'] = locationEditingController.text;
     // get input specialization value
@@ -487,10 +479,6 @@ AutomaticKeepAliveClientMixin<Criteria> {
     finalCriteria['Distance'] = _distSliderVal;
     // get Availability Map
     finalCriteria['Availability'] = _availabilityMap;
-  }
-
-  bool _checkMatch() {
-
   }
 
   // alert dialog to show if location services aren't available
@@ -529,6 +517,7 @@ AutomaticKeepAliveClientMixin<Criteria> {
     await intent.launch();
   }
 
+  /// Dispose controllers
   @override
   void dispose() {
     locationEditingController.dispose();
