@@ -6,6 +6,7 @@ import 'package:myusica/subs/specialization_query.dart';
 import 'package:myusica/subs/availability_query.dart';
 import 'package:myusica/helpers/myuser_card.dart';
 import 'package:myusica/helpers/myuser.dart';
+import 'package:myusica/helpers/access.dart';
 
 import 'package:geolocator/geolocator.dart';
 import 'package:android_intent/android_intent.dart';
@@ -19,9 +20,7 @@ class HomePage extends StatefulWidget {
 }
 class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   // static so that same stream can be transmitted through tabs
-  static Stream<QuerySnapshot> stream;
-  static String currCoordinates;
-  static var availability;
+  // static Stream<QuerySnapshot> stream;
 
   final List<Tab> homeTabs = <Tab>[
     Tab(text: 'Results', icon: Icon(Icons.list)), // List of matching Myusers
@@ -78,14 +77,12 @@ class Results extends StatefulWidget {
   ResultsState createState() => new ResultsState();
 }
 
-class ResultsState extends State<Results> with AutomaticKeepAliveClientMixin {
+class ResultsState extends State<Results> {
   /// Build the myuser results based on the stream from the database
   /// Filter by location and availability from the stream
-  bool isLoading = false;
-  @override
-  void initState() {
-    super.initState();
-  }
+  // bool isLoading = false;
+  static String currCoordinates;
+  static var availability;
 
   /// check if availabilities pass
   bool _areAvailabilitiesSame(Map<String, dynamic> myuserAvail, 
@@ -117,11 +114,11 @@ class ResultsState extends State<Results> with AutomaticKeepAliveClientMixin {
     List<String> toRemove = [];
     docs.forEach((d) {
       List<String> myuserCoordinates = (d.data['coordinates']).split(",");
-      List<String> currCoordinates = HomePageState.currCoordinates.split(",");
+      List<String> currCoordinates = ResultsState.currCoordinates.split(",");
       // check availability
       if(!_areAvailabilitiesSame(
         Map<String, dynamic>.from(d.data['availability']), 
-        HomePageState.availability)) toRemove.add(d.documentID);
+        ResultsState.availability)) toRemove.add(d.documentID);
       // check distance
       if(!_isWithinDistance(
         double.parse(myuserCoordinates[0]), 
@@ -137,6 +134,7 @@ class ResultsState extends State<Results> with AutomaticKeepAliveClientMixin {
 
     // Map the prospective myuser(s) to a MyuserItem to be fed into the ListView
     return docs.map((document) {
+      // print(document.data['name']);
       return MyuserItem(
         myuser: Myuser.fromMap(document.data, document.documentID),
       ); 
@@ -147,7 +145,7 @@ class ResultsState extends State<Results> with AutomaticKeepAliveClientMixin {
   Widget build(BuildContext context) {
     return Container(
       child: StreamBuilder(
-        stream: HomePageState.stream,
+        stream: Access().query.snapshots(),
         builder: (BuildContext context, 
             AsyncSnapshot<QuerySnapshot> snapshot) {
           return snapshot.hasData ? ListView(
@@ -157,9 +155,6 @@ class ResultsState extends State<Results> with AutomaticKeepAliveClientMixin {
       ),
     );
   }
-
-  @override
-    bool get wantKeepAlive => true;
 }
 
 /// =============SEARCH CRITERIA=====================
@@ -184,6 +179,7 @@ AutomaticKeepAliveClientMixin<Criteria> {
 
   Position _position;
   var _positionIsLoading = false;
+  var _hasInputChanged = false;
 
   // Availability map
   Map<String, List<String>> _availabilityMap = new Map<String, List<String>>();
@@ -239,6 +235,9 @@ AutomaticKeepAliveClientMixin<Criteria> {
     ).then((result) {
       if (result != null) {
         controller.text = "$result";
+        setState(() {
+          _hasInputChanged = true;
+        });
       }
     }); // put result in text field
   }
@@ -353,7 +352,10 @@ AutomaticKeepAliveClientMixin<Criteria> {
                     max: 100.0,
                     divisions: 20,
                     onChanged: (double newCharge) {
-                      setState(() => _chargeSliderVal = newCharge);
+                      setState(() {
+                        _chargeSliderVal = newCharge;
+                        _hasInputChanged = true;
+                      });
                     },
                   ),
                   separator(10.0),
@@ -373,7 +375,10 @@ AutomaticKeepAliveClientMixin<Criteria> {
                     max: 100.0,
                     divisions: 20,
                     onChanged: (double newDist) {
-                      setState(() => _distSliderVal = newDist);
+                      setState(() {
+                        _distSliderVal = newDist;
+                        _hasInputChanged = true;
+                      });
                     },
                   ),
                   separator(10.0),
@@ -397,6 +402,9 @@ AutomaticKeepAliveClientMixin<Criteria> {
                           if (result != null) {
                             // print("$result");
                             _availabilityMap = result;
+                            setState(() {
+                              _hasInputChanged = true;
+                            });
                           }
                         }),
                     ),
@@ -420,31 +428,48 @@ AutomaticKeepAliveClientMixin<Criteria> {
 
   /// Complete the search conveyer and show user to results
   void _completeSearch() async {
-    // user database
-    final CollectionReference users = Firestore.instance.collection("users");
-    // feed our finalCriteria map with user selections
-    _feedFinalCriteria();
+    if (_hasInputChanged) {
+      // user database
+      final CollectionReference users = Firestore.instance.collection("users");
+      // feed our finalCriteria map with user selections
+      _feedFinalCriteria();
 
-    // translate location input to coordinates
-    String currCoordinates = "";
-    if (!locationEditingController.text.startsWith("Lat:"))
-      currCoordinates = await _addressToCoordinates(finalCriteria['Location']);
-    else currCoordinates = finalCriteria['Location'];
+      // translate location input to coordinates
+      String currCoordinates = "";
+      if (!locationEditingController.text.startsWith("Lat:"))
+        currCoordinates = await _addressToCoordinates(finalCriteria['Location']);
+      else currCoordinates = finalCriteria['Location'];
 
-    HomePageState.currCoordinates = currCoordinates;
-    HomePageState.availability = _availabilityMap;
-    // Call database to fetch myusers matching the criteria
-    HomePageState.stream = users
-                .where("type", isEqualTo: "myuser")
-                .where("typical_hourly_charge", isLessThanOrEqualTo: finalCriteria['Max Charge'])
-                .where("specializations", arrayContains: finalCriteria['Specialization'])
-                // .where("specializations", arrayContains: finalCriteria['Specialization'])
-                .snapshots();
-    // Navigate to Results tab
-    widget.tabController.animateTo(
-      (widget.tabController.index + 1) % 2,
-      duration: Duration(seconds: 5),
-    );   
+      ResultsState.currCoordinates = currCoordinates;
+      ResultsState.availability = _availabilityMap;
+      _buildQuery();
+      // Call database to fetch myusers matching the criteria
+      // Navigate to Results tab
+      widget.tabController.animateTo(
+        (widget.tabController.index + 1) % 2,
+        duration: Duration(seconds: 5),
+      );  
+
+      setState(() {
+        _hasInputChanged = false;
+      });
+    } 
+  }
+
+  void _buildQuery() {
+    Access().query = Firestore.instance.collection("users").where("type", isEqualTo: "myuser");
+    finalCriteria.forEach((k, v) {
+      if (v != null) {
+        switch(k) {
+          case 'Specialization':
+            Access().query = Access().query.where('specializations', arrayContains: finalCriteria['Specialization']);
+            break;
+          case 'Max Charge':
+            Access().query = Access().query.where('typical_hourly_charge', isLessThanOrEqualTo: finalCriteria['Max Charge']);
+            break;
+        }
+      }
+    });
   }
 
   /// Convert an address to coordinates. Useful when we'll want to find distances
@@ -460,25 +485,34 @@ AutomaticKeepAliveClientMixin<Criteria> {
   /// Gather all user search criteria input into a map
   void _feedFinalCriteria() {
     // get input location value
-    if (locationEditingController.text.startsWith("Lat:")) {
-      var buffer = StringBuffer();
-      locationEditingController.text.split(",").forEach((s) {
-        buffer.write(s.split(":")[1]);
-        buffer.write(",");
-      });
+    if (locationEditingController.text.length != 0) {
+      if (locationEditingController.text.startsWith("Lat:")) {
+        var buffer = StringBuffer();
+        locationEditingController.text.split(",").forEach((s) {
+          buffer.write(s.split(":")[1]);
+          buffer.write(",");
+        });
 
-      String loc = buffer.toString();
-      finalCriteria['Location'] = loc.substring(0, loc.length-1);
+        String loc = buffer.toString();
+        finalCriteria['Location'] = loc.substring(0, loc.length-1);
+      }
+      else {
+        finalCriteria['Location'] = locationEditingController.text;
+      }
     }
-    else finalCriteria['Location'] = locationEditingController.text;
+    
+
     // get input specialization value
-    finalCriteria['Specialization'] = specializationEditingController.text;
+    if (specializationEditingController.text.length != 0) {
+      finalCriteria['Specialization'] = specializationEditingController.text;
+    }
     // get Max Charge slider value
     finalCriteria['Max Charge'] = _chargeSliderVal;
     // get distance slider value
     finalCriteria['Distance'] = _distSliderVal;
     // get Availability Map
-    finalCriteria['Availability'] = _availabilityMap;
+    if (_availabilityMap.isNotEmpty)
+      finalCriteria['Availability'] = _availabilityMap;
   }
 
   // alert dialog to show if location services aren't available
