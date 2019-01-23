@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:myusica/home.dart';
+import 'package:myusica/root.dart';
+import 'package:myusica/routes.dart';
+import 'package:myusica/helpers/auth.dart';
 
 void main() {
   runApp(MaterialApp(
@@ -10,11 +12,9 @@ void main() {
       brightness: Brightness.dark,
       primaryColor: Colors.green[800],
       accentColor: Colors.cyan[600],
-      fontFamily: 'Montserrat',
+      fontFamily: 'Roboto',
     ),
-    routes: <String, WidgetBuilder>{
-      '/home': (BuildContext context) => HomePage()
-    },
+    routes: routes,
     home: WelcomeScreen(),
   ));
 }
@@ -31,7 +31,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   void navigationPage() {
-    Navigator.of(context).pushReplacementNamed('/home');
+    Navigator.push(
+      context, 
+      MaterialPageRoute(
+        builder: (context) => RootPage(auth: new Auth())
+      ),
+    );
   }
 
   @override

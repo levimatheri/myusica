@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
 class AvailabilityQuery extends StatefulWidget {
+  final List<int> selected;
+  final Map<String, List<String>> _slots;
+  AvailabilityQuery(List<int> selected, Map<String, List<String>> slots) 
+                    : selected = selected, _slots = slots;
   AvailabilityQueryState createState() => AvailabilityQueryState();
 }
 
 class AvailabilityQueryState extends State<AvailabilityQuery> {
-  Map _slots = Map<String, List<String>>();
   var _days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   var _times = ['Morning', 'Afternoon', 'Evening'];
   List<TimePicker> timePickers;
@@ -14,8 +17,20 @@ class AvailabilityQueryState extends State<AvailabilityQuery> {
     // x ~/ y is same as  (x / y).toInt()
 
     /// generate checkboxes
-    timePickers = List<TimePicker>.generate(21, (i) =>  new TimePicker(this, _days[i ~/ 3], _times[i % 3]));
+    timePickers = List<TimePicker>.generate(21, (i) =>  
+        new TimePicker(this, _days[i ~/ 3], _times[i % 3], i, false));
   }
+
+  @override
+    void initState() {
+      // hacky way of ensuring checkboxes are selected when returning to this screen
+      if (widget.selected != null) {
+        widget.selected.forEach((item) {
+          timePickers[item].checked = true;
+        });
+      }
+      super.initState();
+    }
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +101,15 @@ class AvailabilityQueryState extends State<AvailabilityQuery> {
             child: RaisedButton(
               child: Text('Done'),
               onPressed: () {
-                Navigator.pop(context, _slots);
+                if (widget._slots != null) {
+                  // remove any keys without values in them from the map
+                  widget._slots.keys
+                      .where((k) => widget._slots[k].length == 0)
+                      .toList()
+                      .forEach(widget._slots.remove);
+                }
+                // go back to criteria screen
+                Navigator.pop(context, [widget._slots, widget.selected]);
               }
             ),
           )
@@ -117,27 +140,36 @@ class AvailabilityQueryState extends State<AvailabilityQuery> {
   }
 
   /// Sets slots Map to be returned to [Criteria] class on pop
-  setSlots(bool value, String day, String time) {
+  setSlots(bool value, String day, String time, int position) {
     // old way
     // Map<String, bool> toSet = _slots[day];
     // toSet[time] = value;
     // _slots[day] = toSet;
 
     // eager memory effective way
-    if (_slots[day] == null) _slots[day] = new List<String>();
-    if (value) _slots[day].add(time);
-    else _slots[day].remove(time);
+    if (widget._slots[day] == null) widget._slots[day] = new List<String>();
+    if (value) {
+      widget._slots[day].add(time);
+      widget.selected.add(position);
+    }
+    else {
+      widget._slots[day].remove(time);
+      widget.selected.remove(position);
+    }
   }
 }
 
 class TimePicker extends StatefulWidget {
   final String day;
   final String time;
+  final int position;
   final AvailabilityQueryState aq;
+  bool checked;
 
   // Pass instance of [AvailabilityQueryState] to ensure we set the same _slots instance variable
-  TimePicker(AvailabilityQueryState aq, String day, String time) : day = day, time = time, aq = aq;
-  TimePickerState createState() => new TimePickerState(aq, day, time);
+  TimePicker(AvailabilityQueryState aq, String day, String time, int position, bool checked) 
+      : day = day, time = time, aq = aq, position = position, checked = checked;
+  TimePickerState createState() => new TimePickerState(aq, day, time, checked);
 }
 
 /// Helper class to build selection checkboxes given:
@@ -149,10 +181,11 @@ class TimePickerState extends State<TimePicker> {
   String time;
   bool checked = false;
   AvailabilityQueryState aq;
-  TimePickerState(AvailabilityQueryState aq, String day, String time) {
+  TimePickerState(AvailabilityQueryState aq, String day, String time, bool checked) {
     this.day = day;
     this.time = time;
     this.aq = aq;
+    this.checked = checked;
   }
   @override
   Widget build(BuildContext context) {
@@ -162,7 +195,7 @@ class TimePickerState extends State<TimePicker> {
         // when clicked set _slots to have the day and time selected
         setState(() {
           checked = value;    
-          aq.setSlots(value, day, time);
+          aq.setSlots(value, day, time, widget.position);
         });
     });
   }

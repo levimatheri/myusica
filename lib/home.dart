@@ -7,6 +7,7 @@ import 'package:myusica/subs/availability_query.dart';
 import 'package:myusica/helpers/myuser_card.dart';
 import 'package:myusica/helpers/myuser.dart';
 import 'package:myusica/helpers/access.dart';
+import 'package:myusica/helpers/auth.dart';
 
 import 'package:geolocator/geolocator.dart';
 import 'package:android_intent/android_intent.dart';
@@ -14,19 +15,24 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:latlong/latlong.dart';
 
 class HomePage extends StatefulWidget {
-  HomePage({Key key}) : super(key: key);
+  final BaseAuth auth;
+  final VoidCallback onSignedOut;
+  final String userId;
+
+  HomePage({Key key, this.auth, this.userId, this.onSignedOut}) : super(key: key);
+
   @override
   HomePageState createState() => new HomePageState();
 }
 class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
-  // static so that same stream can be transmitted through tabs
-  // static Stream<QuerySnapshot> stream;
+  final GlobalKey<FormState> formKey = new GlobalKey<FormState>();
 
   final List<Tab> homeTabs = <Tab>[
     Tab(text: 'Results', icon: Icon(Icons.list)), // List of matching Myusers
     Tab(text: 'Search', icon: Icon(Icons.search)), // Search criteria page
   ];
   TabController _tabController;
+  Access access = new Access();
 
   @override
   void initState() {
@@ -40,6 +46,15 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin,
     super.dispose();
   }
 
+  _signOut() async {
+    try {
+      await widget.auth.signOut();
+      widget.onSignedOut();
+    } catch (e) {
+      print(e);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController (
@@ -51,16 +66,24 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin,
             tabs: homeTabs,
           ),
           title: Text("Home"),
+          actions: <Widget>[
+            new FlatButton(
+              child: new Text('Log out',
+                style: new TextStyle(fontSize: 17.0, color: Colors.white
+              )),
+              onPressed: _signOut,
+            ),
+          ],
         ),
         body: TabBarView(
           controller: _tabController,
             children: [
               Container(
-                child: Results()
+                child: Results(access: access)
               ),
               Container (
                 margin: EdgeInsets.only(top: 30.0, left: 20.0, right: 20.0),
-                child: Criteria(_tabController),
+                child: Criteria(_tabController, access: access),
               ),
             ],
         ),
@@ -74,6 +97,8 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin,
 
 /// ==========RESULTS FROM DATABASE SEARCH================
 class Results extends StatefulWidget {
+  final Access access;
+  Results({this.access});
   ResultsState createState() => new ResultsState();
 }
 
@@ -87,6 +112,7 @@ class ResultsState extends State<Results> {
   /// check if availabilities pass
   bool _areAvailabilitiesSame(Map<String, dynamic> myuserAvail, 
                               Map<String, List<String>> searchAvail) {
+    print(searchAvail);
     if (searchAvail.isEmpty) return true; // if availability is not specified, do not bother
     List<String> searchAvailKeys = searchAvail.keys.toList();
     bool areSame = false;
@@ -144,15 +170,15 @@ class ResultsState extends State<Results> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      child: StreamBuilder(
-        stream: Access().query.snapshots(),
+      child: widget.access.query != null ? StreamBuilder(
+        stream: widget.access.query.snapshots(),
         builder: (BuildContext context, 
             AsyncSnapshot<QuerySnapshot> snapshot) {
           return snapshot.hasData ? ListView(
             children: _buildMyuserItems(snapshot.data.documents)
           ) : Center(child: Text("No Myusers found."),);
         }
-      ),
+      ) : Center(child: Text("Click on the Search tab.")),
     );
   }
 }
@@ -160,7 +186,8 @@ class ResultsState extends State<Results> {
 /// =============SEARCH CRITERIA=====================
 class Criteria extends StatefulWidget {
   final TabController tabController;
-  Criteria(TabController tabController) : tabController = tabController;
+  final Access access;
+  Criteria(TabController tabController, {this.access}) : tabController = tabController;
 
   static const routeName = "/criteria";
   CriteriaState createState() => new CriteriaState();
@@ -183,6 +210,8 @@ AutomaticKeepAliveClientMixin<Criteria> {
 
   // Availability map
   Map<String, List<String>> _availabilityMap = new Map<String, List<String>>();
+  int _availabilityItemsSelected = 0;
+  List<int> _selectedItemsPositions = new List<int>();
   /// Results map
   Map<String, dynamic> finalCriteria = Map();
   List<String> criteria = ['Location', 'Specialization', 'Max Charge', 'Distance', 'Availability'];
@@ -392,22 +421,30 @@ AutomaticKeepAliveClientMixin<Criteria> {
                     style: Theme.of(context).textTheme.title
                   ),
                   separator(10.0),
-                  ButtonTheme(
-                    buttonColor: Colors.lightBlue,
-                    child: new RaisedButton(
-                      child: Text('Click to select'),
-                      onPressed: () => Navigator.push(context, 
-                        MaterialPageRoute(settings: RouteSettings(name: Criteria.routeName),
-                        builder: (context) => AvailabilityQuery())).then((result) {
-                          if (result != null) {
-                            // print("$result");
-                            _availabilityMap = result;
-                            setState(() {
-                              _hasInputChanged = true;
-                            });
-                          }
-                        }),
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ButtonTheme(
+                        buttonColor: Colors.lightBlue,
+                        child: new RaisedButton(
+                          child: Text('Click to select'),
+                          onPressed: () => Navigator.push(context, 
+                            MaterialPageRoute(settings: RouteSettings(name: Criteria.routeName),
+                            builder: (context) => AvailabilityQuery(_selectedItemsPositions, _availabilityMap))).then((result) {
+                              if (result != null) {
+                                _availabilityMap = result[0];
+                                print("avail map " + _availabilityMap.toString());
+                                setState(() {
+                                  _hasInputChanged = true;
+                                  _availabilityItemsSelected = result[1].length;
+                                  _selectedItemsPositions = result[1];
+                                });
+                              }
+                            }),
+                        ),
+                      ),
+                      Text("   " + _availabilityItemsSelected.toString() + " items selected"), // really bad hack!
+                    ],
                   ),
                   separator(10.0),
                   ButtonTheme(
@@ -430,7 +467,7 @@ AutomaticKeepAliveClientMixin<Criteria> {
   void _completeSearch() async {
     if (_hasInputChanged) {
       // user database
-      final CollectionReference users = Firestore.instance.collection("users");
+      //final CollectionReference users = Firestore.instance.collection("users");
       // feed our finalCriteria map with user selections
       _feedFinalCriteria();
 
@@ -457,15 +494,15 @@ AutomaticKeepAliveClientMixin<Criteria> {
   }
 
   void _buildQuery() {
-    Access().query = Firestore.instance.collection("users").where("type", isEqualTo: "myuser");
+    widget.access.query = Firestore.instance.collection("users").where("type", isEqualTo: "myuser");
     finalCriteria.forEach((k, v) {
       if (v != null) {
         switch(k) {
           case 'Specialization':
-            Access().query = Access().query.where('specializations', arrayContains: finalCriteria['Specialization']);
+            widget.access.query = widget.access.query.where('specializations', arrayContains: finalCriteria['Specialization']);
             break;
           case 'Max Charge':
-            Access().query = Access().query.where('typical_hourly_charge', isLessThanOrEqualTo: finalCriteria['Max Charge']);
+            widget.access.query = widget.access.query.where('typical_hourly_charge', isLessThanOrEqualTo: finalCriteria['Max Charge']);
             break;
         }
       }
