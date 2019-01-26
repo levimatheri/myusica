@@ -18,14 +18,16 @@ class HomePage extends StatefulWidget {
   final BaseAuth auth;
   final VoidCallback onSignedOut;
   final String userId;
+  final String username;
 
-  HomePage({Key key, this.auth, this.userId, this.onSignedOut}) : super(key: key);
+  HomePage({Key key, this.auth, this.userId, this.username, this.onSignedOut}) : super(key: key);
 
   @override
   HomePageState createState() => new HomePageState();
 }
 class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   final GlobalKey<FormState> formKey = new GlobalKey<FormState>();
+  final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
 
   final List<Tab> homeTabs = <Tab>[
     Tab(text: 'Results', icon: Icon(Icons.list)), // List of matching Myusers
@@ -60,20 +62,47 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin,
     return DefaultTabController (
       length: 2,
       child: Scaffold (
+        key: _scaffoldKey,
         appBar: AppBar(
+          leading: IconButton(
+            icon: Icon(Icons.settings),
+            onPressed: () => _scaffoldKey.currentState.openDrawer(),
+          ),
           bottom: TabBar(
             controller: _tabController,
             tabs: homeTabs,
           ),
           title: Text("Home"),
-          actions: <Widget>[
-            new FlatButton(
-              child: new Text('Log out',
-                style: new TextStyle(fontSize: 17.0, color: Colors.white
-              )),
-              onPressed: _signOut,
-            ),
-          ],
+          automaticallyImplyLeading: false, // removes back button so that user can only use log out
+        ),
+        // side menu
+        drawer: Drawer(
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: <Widget>[
+              DrawerHeader(
+                child: Text(
+                  "Hello " + widget.username + "!", style: TextStyle(fontStyle: FontStyle.italic, fontSize: 20.0)
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.green[800],
+                ),
+              ),
+              ListTile(
+                title: Text('My account', style: TextStyle(fontSize: 18.0)),
+                onTap: null,
+              ),
+              // TODO: Add chat link
+              // ListTile(
+              //   title: Text('Chats'),
+              //   onTap: null,
+              // ),
+              ListTile(
+                title: Text('Log out', style: TextStyle(fontSize: 18.0)),
+                onTap: _signOut,
+              ),
+            ],
+          ),
         ),
         body: TabBarView(
           controller: _tabController,
@@ -433,7 +462,6 @@ AutomaticKeepAliveClientMixin<Criteria> {
                             builder: (context) => AvailabilityQuery(_selectedItemsPositions, _availabilityMap))).then((result) {
                               if (result != null) {
                                 _availabilityMap = result[0];
-                                print("avail map " + _availabilityMap.toString());
                                 setState(() {
                                   _hasInputChanged = true;
                                   _availabilityItemsSelected = result[1].length;

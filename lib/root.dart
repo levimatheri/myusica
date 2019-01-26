@@ -21,13 +21,22 @@ enum AuthStatus {
 class _RootPageState extends State<RootPage> {
   AuthStatus authStatus = AuthStatus.NOT_DETERMINED;
   String _userId = "";
+  String _username = "";
 
   @override
   void initState() {
     super.initState();
     widget.auth.getCurrentUser().then((user) {
       setState(() {
-        if (user != null) _userId = user?.uid;
+        if (user != null) 
+        {
+          _userId = user?.uid;
+          widget.auth.getUsername(_userId).then((username) {
+            if (username != null) {
+              _username = username;
+            } 
+          });
+        }
         authStatus = 
           user?.uid == null ? AuthStatus.NOT_LOGGED_IN : AuthStatus.LOGGED_IN;
       });
@@ -37,7 +46,15 @@ class _RootPageState extends State<RootPage> {
   void _onLoggedIn() {
     widget.auth.getCurrentUser().then((user) {
       setState(() {
-        _userId = user.uid.toString();
+        if (user != null) 
+        {
+          _userId = user?.uid;
+          widget.auth.getUsername(_userId).then((username) {
+            if (username != null) {
+              _username = username;
+            } 
+          });
+        }
       });
     });
     setState(() {
@@ -77,6 +94,7 @@ class _RootPageState extends State<RootPage> {
         if (_userId != null) {
           return HomePage(
             userId: _userId,
+            username: _username,
             auth: widget.auth,
             onSignedOut: _onSignedOut,
           );

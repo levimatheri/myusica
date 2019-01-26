@@ -22,6 +22,7 @@ class LoginPageState extends State<LoginPage> {
 
   bool _isIos;
 
+  String _username;
   String _email;
   String _password;
   String _errorMessage;
@@ -49,7 +50,7 @@ class LoginPageState extends State<LoginPage> {
           userId = await widget.auth.signIn(_email, _password);
           print('Signed in user: $userId');
         } else {
-          userId = await widget.auth.signUp(_email, _password);
+          userId = await widget.auth.signUp(_username, _email, _password);
           print('Signed up user: $userId');
         }
 
@@ -82,6 +83,7 @@ class LoginPageState extends State<LoginPage> {
     return new Scaffold(
       appBar: new AppBar(
         title: new Text("Log in"),
+        automaticallyImplyLeading: false, // removes back button so that user can only use log out
       ),
       body: Stack(
         children: <Widget>[
@@ -101,19 +103,39 @@ class LoginPageState extends State<LoginPage> {
     return new Hero(
       tag: 'hero',
       child: Padding(
-        padding: EdgeInsets.fromLTRB(0.0, 15.0, 0.0, 0.0),
+        padding: _formMode == FormMode.LOGIN ? EdgeInsets.fromLTRB(0.0, 15.0, 0.0, 0.0) : EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 0.0),
         child: CircleAvatar(
           backgroundColor: Colors.transparent,
-          radius: 80.0,
+          radius: 70.0,
           child: Image.asset('images/Myusica logo.png'),
         ),
       ),
     );
   }
 
+  Widget _showUsernameInput() {
+    return _formMode == FormMode.SIGNUP ? Padding(
+      padding: const EdgeInsets.fromLTRB(0.0, 2.0, 0.0, 10.0),
+      child: new TextFormField(
+        maxLines: 1,
+        keyboardType: TextInputType.emailAddress,
+        autofocus: false,
+        decoration: new InputDecoration(
+          hintText: 'Username',
+          icon: new Icon(
+            Icons.person,
+            color: Colors.blue[200],
+          ),
+        ),
+        validator: (value) => value.isEmpty ? 'Username cannot be empty' : null,
+        onSaved: (value) => _username = value,
+      ),
+    ) : Container();
+  }
+
   Widget _showEmailInput() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(0.0, 20.0, 0.0, 0.0),
+      padding: _formMode == FormMode.LOGIN ? EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 20.0) : EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 10.0),
       child: new TextFormField(
         maxLines: 1,
         keyboardType: TextInputType.emailAddress,
@@ -133,7 +155,7 @@ class LoginPageState extends State<LoginPage> {
 
   Widget _showPasswordInput() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(0.0, 15.0, 0.0, 0.0),
+      padding: _formMode == FormMode.LOGIN ? EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 20.0) : EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 10.0),
       child: new TextFormField(
         maxLines: 1,
         obscureText: true,
@@ -149,6 +171,26 @@ class LoginPageState extends State<LoginPage> {
         onSaved: (value) => _password = value,
       ),
     );
+  }
+
+  Widget _showConfirmPasswordInput() {
+    return _formMode == FormMode.SIGNUP ? Padding(
+      padding: const EdgeInsets.fromLTRB(0.0, 15.0, 0.0, 0.0),
+      child: new TextFormField(
+        maxLines: 1,
+        obscureText: true,
+        autofocus: false,
+        decoration: new InputDecoration(
+          hintText: 'Confirm password',
+          icon: new Icon(
+            Icons.lock,
+            color: Colors.blue[200],
+          ),
+        ),
+        validator: (value) => value.isEmpty ? 'Password cannot be empty' : null,
+        // onSaved: (value) => _password = value,
+      ),
+    ) : Container();
   }
 
   Widget _showPrimaryButton() {
@@ -225,8 +267,10 @@ class LoginPageState extends State<LoginPage> {
           shrinkWrap: true,
           children: <Widget>[
             _showLogo(),
+            _showUsernameInput(),
             _showEmailInput(),
             _showPasswordInput(),
+            _showConfirmPasswordInput(),
             _showPrimaryButton(),
             _showSecondaryButton(),
             _showErrorMessage(),
