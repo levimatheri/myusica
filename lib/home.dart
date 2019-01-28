@@ -264,7 +264,6 @@ AutomaticKeepAliveClientMixin<Criteria> {
           _specFocusNode, SpecializationQuery(), specializationEditingController
       )
     );
-    locationEditingController.text = "Lat: 40.94496637, Long: -81.36408303";
 //    locationEditingController.clear();
 //    specializationEditingController.clear();
     _initPlatformState();
