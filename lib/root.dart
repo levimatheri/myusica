@@ -26,23 +26,29 @@ class _RootPageState extends State<RootPage> {
   @override
   void initState() {
     super.initState();
+    // determine logged in status
     widget.auth.getCurrentUser().then((user) {
       setState(() {
         if (user != null) 
         {
           _userId = user?.uid;
-          widget.auth.getUsername(_userId).then((username) {
-            if (username != null) {
-              _username = username;
-            } 
-          });
         }
+        // if user id is null, set status to not logged in otherwise set it to logged in
         authStatus = 
           user?.uid == null ? AuthStatus.NOT_LOGGED_IN : AuthStatus.LOGGED_IN;
+      });
+      
+      widget.auth.getUsername(_userId).then((username) {
+        setState(() {
+          if (username != null) {
+            _username = username;
+          } 
+        });
       });
     });
   }
 
+  // after logging in get current user id and name
   void _onLoggedIn() {
     widget.auth.getCurrentUser().then((user) {
       setState(() {
@@ -62,6 +68,7 @@ class _RootPageState extends State<RootPage> {
     });
   }
 
+  // set user id to empty and set status to not logged in
   void _onSignedOut() {
     setState(() {
       authStatus = AuthStatus.NOT_LOGGED_IN;

@@ -141,7 +141,7 @@ class ResultsState extends State<Results> {
   /// check if availabilities pass
   bool _areAvailabilitiesSame(Map<String, dynamic> myuserAvail, 
                               Map<String, List<String>> searchAvail) {
-    print(searchAvail);
+    // print(searchAvail);
     if (searchAvail.isEmpty) return true; // if availability is not specified, do not bother
     List<String> searchAvailKeys = searchAvail.keys.toList();
     bool areSame = false;
@@ -164,7 +164,6 @@ class ResultsState extends State<Results> {
 
   /// go through document snapshots from database
   List<Widget> _buildMyuserItems(List<DocumentSnapshot> docs) {
-
     /// filter through documents and remove what doesn't match availability and distance range
     List<String> toRemove = [];
     docs.forEach((d) {
@@ -265,6 +264,7 @@ AutomaticKeepAliveClientMixin<Criteria> {
           _specFocusNode, SpecializationQuery(), specializationEditingController
       )
     );
+    locationEditingController.text = "Lat: 40.94496637, Long: -81.36408303";
 //    locationEditingController.clear();
 //    specializationEditingController.clear();
     _initPlatformState();
