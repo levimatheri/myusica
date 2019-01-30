@@ -4,13 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:myusica/subs/location_query.dart';
 import 'package:myusica/subs/specialization_query.dart';
 import 'package:myusica/subs/availability_query.dart';
-import 'package:myusica/helpers/myuser_card.dart';
+import 'package:myusica/helpers/myuser_item.dart';
 import 'package:myusica/helpers/myuser.dart';
 import 'package:myusica/helpers/access.dart';
 import 'package:myusica/helpers/auth.dart';
 
 import 'package:geolocator/geolocator.dart';
-import 'package:android_intent/android_intent.dart';
+// import 'package:android_intent/android_intent.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:latlong/latlong.dart';
 
@@ -500,6 +500,10 @@ AutomaticKeepAliveClientMixin<Criteria> {
 
       // translate location input to coordinates
       String currCoordinates = "";
+      if (locationEditingController.text.length == 0) {
+        showAlertDialog(["Okay"], "Empty location input", "Input location cannot be empty");
+        return;
+      }
       if (!locationEditingController.text.startsWith("Lat:"))
         currCoordinates = await _addressToCoordinates(finalCriteria['Location']);
       else currCoordinates = finalCriteria['Location'];
@@ -563,7 +567,7 @@ AutomaticKeepAliveClientMixin<Criteria> {
       else {
         finalCriteria['Location'] = locationEditingController.text;
       }
-    }
+    } else return;
     
 
     // get input specialization value
@@ -593,13 +597,13 @@ AutomaticKeepAliveClientMixin<Criteria> {
               onPressed: () => Navigator.of(context).pop(),
               child: new Text(actions[0]),
             ),
-            new FlatButton(
-              onPressed: actions[1] != "Accept" ? null : () {
-                _openLocationSettings();
-                Navigator.of(context).pop();
-              },
-              child: new Text(actions[1]),
-            ) ,
+            // new FlatButton(
+            //   onPressed: actions[1] != "Accept" ? null : () {
+            //     _openLocationSettings();
+            //     Navigator.of(context).pop();
+            //   },
+            //   child: new Text(actions[1]),
+            // ) ,
           ],
         );
       },
@@ -608,12 +612,12 @@ AutomaticKeepAliveClientMixin<Criteria> {
 
   /// open location settings on device 
   /// TODO: Implement an iOS version
-  void _openLocationSettings() async {
-    final AndroidIntent intent = new AndroidIntent(
-        action: 'android.settings.LOCATION_SOURCE_SETTINGS',
-    );
-    await intent.launch();
-  }
+  // void _openLocationSettings() async {
+  //   final AndroidIntent intent = new AndroidIntent(
+  //       action: 'android.settings.LOCATION_SOURCE_SETTINGS',
+  //   );
+  //   await intent.launch();
+  // }
 
   /// Dispose controllers
   @override
