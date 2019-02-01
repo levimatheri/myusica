@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:myusica/helpers/auth.dart';
 import 'package:flutter/services.dart';
+import 'package:myusica/helpers/dialogs.dart';
 
 class LoginPage extends StatefulWidget {
   LoginPage({this.auth, this.onSignedIn});
@@ -103,7 +104,8 @@ class LoginPageState extends State<LoginPage> {
     return new Hero(
       tag: 'hero',
       child: Padding(
-        padding: _formMode == FormMode.LOGIN ? EdgeInsets.fromLTRB(0.0, 15.0, 0.0, 0.0) : EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 0.0),
+        padding: _formMode == FormMode.LOGIN ? EdgeInsets.fromLTRB(0.0, 15.0, 0.0, 0.0) 
+                                : EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 0.0),
         child: CircleAvatar(
           backgroundColor: Colors.transparent,
           radius: 70.0,
@@ -135,7 +137,8 @@ class LoginPageState extends State<LoginPage> {
 
   Widget _showEmailInput() {
     return Padding(
-      padding: _formMode == FormMode.LOGIN ? EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 20.0) : EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 10.0),
+      padding: _formMode == FormMode.LOGIN ? EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 20.0) 
+                                    : EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 10.0),
       child: new TextFormField(
         maxLines: 1,
         keyboardType: TextInputType.emailAddress,
@@ -155,7 +158,8 @@ class LoginPageState extends State<LoginPage> {
 
   Widget _showPasswordInput() {
     return Padding(
-      padding: _formMode == FormMode.LOGIN ? EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 20.0) : EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 10.0),
+      padding: _formMode == FormMode.LOGIN ? EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 20.0) 
+                                  : EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 10.0),
       child: new TextFormField(
         maxLines: 1,
         obscureText: true,
@@ -187,8 +191,20 @@ class LoginPageState extends State<LoginPage> {
             color: Colors.blue[200],
           ),
         ),
-        validator: (value) => value.isEmpty ? 'Password cannot be empty' : null,
-        // onSaved: (value) => _password = value,
+        validator: (value) {
+          if (value.isEmpty) 
+          {
+            showAlertDialog(context, ["Okay"], "Error", "Please confirm password");
+            return;
+          }
+          else {
+            if (value != _password) 
+            {
+              showAlertDialog(context, ["Okay"], "Error", "Passwords do not match");
+              return;
+            }
+          }
+        }
       ),
     ) : Container();
   }

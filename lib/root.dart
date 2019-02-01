@@ -38,13 +38,15 @@ class _RootPageState extends State<RootPage> {
           user?.uid == null ? AuthStatus.NOT_LOGGED_IN : AuthStatus.LOGGED_IN;
       });
       
-      widget.auth.getUsername(_userId).then((username) {
-        setState(() {
-          if (username != null) {
-            _username = username;
-          } 
+      if (_userId != null && _userId.isNotEmpty) {
+        widget.auth.getUsername(_userId).then((username) {
+          setState(() {
+            if (username != null) {
+              _username = username;
+            } 
+          });
         });
-      });
+      }
     });
   }
 

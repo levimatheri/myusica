@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:myusica/subs/location_query.dart';
 import 'package:myusica/subs/specialization_query.dart';
 import 'package:myusica/subs/availability_query.dart';
+import 'package:myusica/subs/register.dart';
 import 'package:myusica/helpers/myuser_item.dart';
 import 'package:myusica/helpers/myuser.dart';
 import 'package:myusica/helpers/access.dart';
@@ -57,6 +58,13 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin,
     }
   }
 
+  _navigateToRegister() {
+    Navigator.push(
+      context, 
+      MaterialPageRoute(settings: RouteSettings(), builder: (context) => Register())
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController (
@@ -100,6 +108,11 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin,
               ListTile(
                 title: Text('Log out', style: TextStyle(fontSize: 18.0)),
                 onTap: _signOut,
+              ),
+              Divider(),
+              ListTile(
+                title: Text('Register to be a myuser', style: TextStyle(fontSize: 18.0)),
+                onTap: _navigateToRegister,
               ),
             ],
           ),
