@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:myusica/subs/location_query.dart';
-import 'package:myusica/subs/specialization_query.dart';
+import 'package:myusica/subs/autocomplete_query.dart';
 import 'package:myusica/subs/availability_query.dart';
 import 'package:myusica/subs/register.dart';
 import 'package:myusica/helpers/myuser_item.dart';
 import 'package:myusica/helpers/myuser.dart';
 import 'package:myusica/helpers/access.dart';
 import 'package:myusica/helpers/auth.dart';
+import 'package:myusica/helpers/specializations.dart';
 
 import 'package:geolocator/geolocator.dart';
 // import 'package:android_intent/android_intent.dart';
@@ -274,7 +275,7 @@ AutomaticKeepAliveClientMixin<Criteria> {
     );
     _specFocusNode.addListener(
       () => _onFocusChange(
-          _specFocusNode, SpecializationQuery(), specializationEditingController
+          _specFocusNode, AutocompleteQuery(specialization_list, "Specialization"), specializationEditingController
       )
     );
 //    locationEditingController.clear();
@@ -296,7 +297,7 @@ AutomaticKeepAliveClientMixin<Criteria> {
 
   // return a Future that will complete after
   // Navigator.pop on query screen
-  Future getResult(dynamic destination, TextEditingController controller) {
+  getResult(dynamic destination, TextEditingController controller) {
     return Navigator.push(
       context,
       MaterialPageRoute(

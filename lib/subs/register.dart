@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_masked_text/flutter_masked_text.dart';
 import 'package:myusica/subs/availability_query.dart';
 import 'package:myusica/helpers/countries.dart';
+import 'package:myusica/subs/autocomplete_query.dart';
 /// Myuser registration
 class Register extends StatefulWidget {
   RegisterState createState() => new RegisterState();
@@ -13,18 +14,57 @@ class RegisterState extends State<Register> {
   final _formKey = new GlobalKey<FormState>();
 
   String _name;
-
+  String _city;
+  String _state;
   String _country;
-  var _controller = new MoneyMaskedTextController(leftSymbol: 'US\$', 
-                            decimalSeparator: '.');
+  String _email;
+  String _phone;
+  String _charge;
 
   Map<String, List<String>> _availabilityMap = new Map<String, List<String>>();
   List<int> _selectedItemsPositions = new List<int>();
   int _availabilityItemsSelected = 0;
 
+  var _controller = new MoneyMaskedTextController(leftSymbol: 'US\$', 
+                            decimalSeparator: '.');
+
+  FocusNode _countryFocusNode = new FocusNode();
+  TextEditingController _countryTextController = new TextEditingController();                            
+
   bool _isLoading;
   bool _isIos;
   String _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _countryFocusNode.addListener(() {
+      if (_countryFocusNode.hasFocus) {
+        _countryFocusNode.unfocus();
+        return;
+      }
+      getResult();
+    });
+  }
+
+  @override
+  void dispose() {
+    _countryTextController.dispose();
+    super.dispose();
+  }
+
+  Future getResult() {
+    return Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AutocompleteQuery(country_list, "Country"),
+      ),
+    ).then((result) {
+      if (result != null) {
+        _countryTextController.text = "$result";
+      }
+    }); // put result in text field
+  }
 
   Widget _showBody() {
     return new Container(
@@ -37,7 +77,10 @@ class RegisterState extends State<Register> {
             _showNameInput(),
             _showCityInput(),
             _showStateInput(),
-            // _showCountryInput(),
+            _showCountryInput(),
+            _showChargeInput(),
+            _showAvailabilityInput(),
+            _showDoneButton()
           ],
         ),
       ),
@@ -77,7 +120,7 @@ class RegisterState extends State<Register> {
           ),
         ),
         validator: (value) => value.isEmpty ? 'City/Town cannot be empty' : null,
-        onSaved: (value) => _name = value,
+        onSaved: (value) => _city = value,
       ),
     );
   }
@@ -96,34 +139,26 @@ class RegisterState extends State<Register> {
           ),
         ),
         validator: (value) => value.isEmpty ? 'State cannot be empty' : null,
-        onSaved: (value) => _name = value,
+        onSaved: (value) => _state = value,
       ),
     );
   }
 
-  List<String> getCountries() {
-
-  }
-
   Widget _showCountryInput() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 20.0),
-      // child: CountryCodePicker(
-      //   onChanged: (countryCode) {
-      //     _country = countryCode.name;
-      //   },
-      //   initialSelection: 'US',
-      // ),
-      child: DropdownButton(
-        items: country_list.map((String val) {
-          return DropdownMenuItem(
-            value: val,
-            child: Text(val),
-          );
-        }).toList(),
-        onChanged: (selected) {
-          _country = selected;
-        },
+      padding: const EdgeInsets.fromLTRB(0.0, 20.0, 0.0, 10.0),
+      child: TextFormField(
+        focusNode: _countryFocusNode,
+        controller: _countryTextController,
+        decoration: InputDecoration(
+          hintText: "Country",
+          icon: Icon(
+            Icons.landscape,
+            color: Colors.blue[200],
+          ),
+        ),
+        validator: (value) => value.isEmpty ? 'Country cannot be empty' : null,
+        onSaved: (value) => _country = value,
       ),
     );
   }
@@ -143,7 +178,7 @@ class RegisterState extends State<Register> {
           ),
         ),
         validator: (value) => value.isEmpty ? 'Email cannot be empty' : null,
-        onSaved: (value) => _name = value,
+        onSaved: (value) => _email = value,
       ),
     );
   }
@@ -163,14 +198,14 @@ class RegisterState extends State<Register> {
           ),
         ),
         validator: (value) => value.isEmpty ? 'Phone cannot be empty' : null,
-        onSaved: (value) => _name = value,
+        onSaved: (value) => _phone = value,
       ),
     );
   }
 
   Widget _showChargeInput() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 20.0),
+      padding: const EdgeInsets.fromLTRB(0.0, 20.0, 0.0, 10.0),
       child: TextFormField(
         maxLines: 1,
         autofocus: false,
@@ -186,15 +221,15 @@ class RegisterState extends State<Register> {
         inputFormatters: [
           WhitelistingTextInputFormatter.digitsOnly,
         ],
-        validator: (value) => value.isEmpty ? 'Phone cannot be empty' : null,
-        onSaved: (value) => _name = value,
+        validator: (value) => value.isEmpty ? 'Charge cannot be empty' : null,
+        onSaved: (value) => _charge = value,
       ),
     );
   }
 
   Widget _showAvailabilityInput() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 20.0),
+      padding: const EdgeInsets.fromLTRB(0.0, 20.0, 0.0, 10.0),
       child: Row(
         children: [
           ButtonTheme(
@@ -222,13 +257,13 @@ class RegisterState extends State<Register> {
 
   Widget _showDoneButton() {
     return new Padding(
-      padding: EdgeInsets.fromLTRB(0.0, 45.0, 0.0, 0.0),
+      padding: EdgeInsets.fromLTRB(0.0, 20.0, 0.0, 10.0),
       child: new MaterialButton(
         elevation: 5.0,
         minWidth: 200.0,
         height: 42.0,
         color: Colors.orange,
-        child: Text('Create account',
+        child: Text('Done',
                     style: new TextStyle(fontSize: 20.0, color: Colors.white)),
         onPressed: _validateAndSubmit,
       ),
