@@ -1,8 +1,9 @@
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
-// import 'package:country_code_picker/country_code_picker.dart';
+// import 'package:myusica/helpers/isolate.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_masked_text/flutter_masked_text.dart';
 import 'package:myusica/subs/availability_query.dart';
@@ -12,6 +13,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image/image.dart' as img;
+
+
 /// Myuser registration
 class Register extends StatefulWidget {
   final String userId;
@@ -30,7 +33,7 @@ class RegisterState extends State<Register> {
   String _email;
   String _phone;
   String _charge;
-  var _picture;
+  File _picture;
   var _compressedPic;
 
   Map<String, List<String>> _availabilityMap = new Map<String, List<String>>();
@@ -332,7 +335,8 @@ class RegisterState extends State<Register> {
     // if picture has been selected, set _isPictureSelected and show snackbar for 2 seconds
     if (_picture != null) {
       _isLoading = false;
-      _compressedPic = await _compressImage(_picture.path);
+      print("null? " + (_picture == null).toString());
+      _compressedPic = await _initCompress(_picture);
       if (_compressedPic != null)
       {
         print("File compressed successfully! " + _compressedPic.path);
@@ -352,10 +356,12 @@ class RegisterState extends State<Register> {
       source: ImageSource.gallery,
     );
 
+    Navigator.of(context).pop();
+
     // if picture has been selected, set _isPictureSelected and show snackbar for 2 seconds
     if (_picture != null) {
       _isLoading = false;
-      _compressedPic = await _compressImage(_picture.path);
+      _compressedPic = await _initCompress(_picture);
       if (_compressedPic != null)
       {
         print("File compressed successfully! " + _compressedPic.path);
@@ -367,8 +373,6 @@ class RegisterState extends State<Register> {
         });
       }
     }
-
-    Navigator.of(context).pop();
   }
 
   Widget _showDoneButton() {
@@ -441,28 +445,40 @@ class RegisterState extends State<Register> {
     
   }
 
-  Future<File> _compressImage(String path) async {
-    print("Picture path: " + path);
+  Future<dynamic> _initCompress(File picture) async {
+    final response = new ReceivePort();
+    await Isolate.spawn(isolate, response.sendPort);
+    final sendPort = await response.first as SendPort;
+    final answer = new ReceivePort();
+    sendPort.send([widget.userId, _picture.path, answer.sendPort, picture]);
+    return answer.first;
+  }
 
+  static Future<File> compressImage(String userId, String path, File picture) async {
     String newPath = path.substring(0, path.lastIndexOf("/")+1);
-    // ReceivePort receivePort = new ReceivePort();
-
-    // await Isolate.spawn(decode, 
-    // DecodeParam(new File(path), receivePort.sendPort));
-
-    // // Get processed image from the isolate
-    // img.Image image = await receivePort.first;
 
     try {
-      img.Image image = img.decodeImage(_picture.readAsBytesSync());
+      print(picture == null);
+      img.Image image = img.decodeImage(picture.readAsBytesSync());
       // Resize image to 120x? thumbnail
       img.Image thumbnail = img.copyResize(image, 120);
 
-      return File(newPath + widget.userId + "-profile.png").writeAsBytes(img.encodePng(thumbnail));
+      return File(newPath + userId + "-profile.png").writeAsBytes(img.encodePng(thumbnail));
     } catch (e) { print(e); return null; }
   }
 
-  
+  static void isolate(SendPort initialReplyTo) {
+    final port = new ReceivePort();
+    initialReplyTo.send(port.sendPort);
+    port.listen((message) async {
+      // print("message is " + message.toString());
+      final userId = message[0] as String;
+      final picturePath = message[1] as dynamic;
+      final send = message[2] as SendPort;
+      final pic = message[3] as File;
+      send.send(await compressImage(userId, picturePath, pic));
+    });
+  }
 
   Widget _showCircularProgress() {
     return _isLoading ? CircularProgressIndicator() 
@@ -485,18 +501,4 @@ class RegisterState extends State<Register> {
       ),
     );
   }
-}
-
-void decode(DecodeParam param) {
-  // Read image from file
-  img.Image image = img.decodeImage(param.file.readAsBytesSync());
-  // Resize image to 120x? thumbnail
-  img.Image thumbnail = img.gaussianBlur(img.copyResize(image, 120), 5);
-  param.sendPort.send(thumbnail);
-}
-
-class DecodeParam {
-  final File file;
-  final SendPort sendPort;
-  DecodeParam(this.file, this.sendPort);
 }
