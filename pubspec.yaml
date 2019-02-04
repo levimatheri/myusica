@@ -36,12 +36,14 @@ dependencies:
   googleapis_auth: any
   country_code_picker: ^1.1.1
   flutter_masked_text: ^0.7.0
+  image_picker: ^0.4.5
+  image: ^2.0.6
+
 
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
 
 # For information on the generic Dart part of this file, see the
 # following page: https://www.dartlang.org/tools/pub/pubspec

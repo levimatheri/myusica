@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:isolate';
+
 import 'package:flutter/material.dart';
 // import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/services.dart';
@@ -5,13 +8,20 @@ import 'package:flutter_masked_text/flutter_masked_text.dart';
 import 'package:myusica/subs/availability_query.dart';
 import 'package:myusica/helpers/countries.dart';
 import 'package:myusica/subs/autocomplete_query.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image/image.dart' as img;
 /// Myuser registration
 class Register extends StatefulWidget {
+  final String userId;
+  Register({this.userId});
   RegisterState createState() => new RegisterState();
 }
 
 class RegisterState extends State<Register> {
   final _formKey = new GlobalKey<FormState>();
+  final _scaffoldKey = new GlobalKey<ScaffoldState>();
 
   String _name;
   String _city;
@@ -20,6 +30,8 @@ class RegisterState extends State<Register> {
   String _email;
   String _phone;
   String _charge;
+  var _picture;
+  var _compressedPic;
 
   Map<String, List<String>> _availabilityMap = new Map<String, List<String>>();
   List<int> _selectedItemsPositions = new List<int>();
@@ -33,11 +45,15 @@ class RegisterState extends State<Register> {
 
   bool _isLoading;
   bool _isIos;
+  bool _isPictureSelected;
+
   String _errorMessage;
 
   @override
   void initState() {
     super.initState();
+    _isLoading = false;
+    // _isPictureSelected = false;
     _countryFocusNode.addListener(() {
       if (_countryFocusNode.hasFocus) {
         _countryFocusNode.unfocus();
@@ -80,6 +96,7 @@ class RegisterState extends State<Register> {
             _showCountryInput(),
             _showChargeInput(),
             _showAvailabilityInput(),
+            _showPictureInput(),
             _showDoneButton()
           ],
         ),
@@ -255,6 +272,105 @@ class RegisterState extends State<Register> {
     );
   }
 
+  Widget _showPictureInput() {
+     return Padding(
+      padding: const EdgeInsets.fromLTRB(0.0, 20.0, 0.0, 10.0),
+      child: Row(
+        children: [
+          ButtonTheme(
+            buttonColor: Colors.lightBlue,
+            child: new RaisedButton(
+              child: Text('Click to add picture'),
+              onPressed: _pictureOptionsDialogBox
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.only(left: 10.0),
+          ),
+          _isPictureSelected != null ? _isPictureSelected ? CircleAvatar(
+            backgroundImage: Image.file(_compressedPic).image,
+          ) : CircularProgressIndicator() : Container(height: 0.0, width: 0.0,),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pictureOptionsDialogBox() {
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                GestureDetector(
+                  child: Text('Take a picture'),
+                  onTap: _openCamera,
+                ),
+                Padding(
+                  padding: EdgeInsets.all(8.0),
+                ),
+                GestureDetector(
+                  child: Text('Select from gallery'),
+                  onTap: _openGallery,
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    );
+  }
+
+  // open phone camera
+  _openCamera() async {
+    _picture = await ImagePicker.pickImage(
+      source: ImageSource.camera,
+    );
+
+    Navigator.of(context).pop();
+    // if picture has been selected, set _isPictureSelected and show snackbar for 2 seconds
+    if (_picture != null) {
+      _isLoading = false;
+      _compressedPic = await _compressImage(_picture.path);
+      if (_compressedPic != null)
+      {
+        print("File compressed successfully! " + _compressedPic.path);
+        final snackBar = SnackBar(content: Text('Picture added'), duration: Duration(seconds: 2),);
+        _scaffoldKey.currentState.showSnackBar(snackBar);
+
+        setState(() {
+          _isPictureSelected = true; 
+        });
+      }
+    }
+  }
+
+  // open phone gallery
+  _openGallery() async {
+    _picture = await ImagePicker.pickImage(
+      source: ImageSource.gallery,
+    );
+
+    // if picture has been selected, set _isPictureSelected and show snackbar for 2 seconds
+    if (_picture != null) {
+      _isLoading = false;
+      _compressedPic = await _compressImage(_picture.path);
+      if (_compressedPic != null)
+      {
+        print("File compressed successfully! " + _compressedPic.path);
+        final snackBar = SnackBar(content: Text('Picture added'), duration: Duration(seconds: 2),);
+        _scaffoldKey.currentState.showSnackBar(snackBar);
+
+        setState(() {
+          _isPictureSelected = true; 
+        });
+      }
+    }
+
+    Navigator.of(context).pop();
+  }
+
   Widget _showDoneButton() {
     return new Padding(
       padding: EdgeInsets.fromLTRB(0.0, 20.0, 0.0, 10.0),
@@ -286,13 +402,27 @@ class RegisterState extends State<Register> {
     });
 
     if (_validateAndSave()) {
-      String userId = "";
       try {
         // Implement transaction to Firebase
+        // First upload picture to firebase
+        if (_picture != null) {
+          // Compress image
+          
+          // if (File(widget.userId + "-profile.png") != null)
+          //   print(File(widget.userId + "-profile.png").length());
+          // final StorageReference storageRef = 
+          // FirebaseStorage.instance.ref()
+          //       .child("myuser-profile-pictures")
+          //       .child(widget.userId + "-profile");
 
-        setState(() {
-          _isLoading = false;        
-        });
+          // final StorageUploadTask task = 
+          //   storageRef.putFile(_picture);
+          // bool _uploadComplete = task.isSuccessful;
+          // if (_uploadComplete) print("Upload successful!");
+        }
+        
+        // Create new document for user collection
+        
       } on PlatformException catch (e) {
         print('Error: $e');
         setState(() {
@@ -302,21 +432,71 @@ class RegisterState extends State<Register> {
         });
       }
     }
+    setState(() {
+      _isLoading = false;        
+    });
   }
 
+  _uploadNewPicture() {
+    
+  }
+
+  Future<File> _compressImage(String path) async {
+    print("Picture path: " + path);
+
+    String newPath = path.substring(0, path.lastIndexOf("/")+1);
+    // ReceivePort receivePort = new ReceivePort();
+
+    // await Isolate.spawn(decode, 
+    // DecodeParam(new File(path), receivePort.sendPort));
+
+    // // Get processed image from the isolate
+    // img.Image image = await receivePort.first;
+
+    try {
+      img.Image image = img.decodeImage(_picture.readAsBytesSync());
+      // Resize image to 120x? thumbnail
+      img.Image thumbnail = img.copyResize(image, 120);
+
+      return File(newPath + widget.userId + "-profile.png").writeAsBytes(img.encodePng(thumbnail));
+    } catch (e) { print(e); return null; }
+  }
+
+  
+
+  Widget _showCircularProgress() {
+    return _isLoading ? CircularProgressIndicator() 
+               : Container(height: 0.0, width: 0.0);
+  }
 
   @override
   Widget build(BuildContext context) {
     _isIos = Theme.of(context).platform == TargetPlatform.iOS;
     return new Scaffold(
+      key: _scaffoldKey,
       appBar: new AppBar(
         title: new Text("Register"),
       ),
       body: Stack(
         children: <Widget>[
           _showBody(),
+          _showCircularProgress()
         ],
       ),
     );
   }
+}
+
+void decode(DecodeParam param) {
+  // Read image from file
+  img.Image image = img.decodeImage(param.file.readAsBytesSync());
+  // Resize image to 120x? thumbnail
+  img.Image thumbnail = img.gaussianBlur(img.copyResize(image, 120), 5);
+  param.sendPort.send(thumbnail);
+}
+
+class DecodeParam {
+  final File file;
+  final SendPort sendPort;
+  DecodeParam(this.file, this.sendPort);
 }

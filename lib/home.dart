@@ -62,7 +62,8 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin,
   _navigateToRegister() {
     Navigator.push(
       context, 
-      MaterialPageRoute(settings: RouteSettings(), builder: (context) => Register())
+      MaterialPageRoute(settings: RouteSettings(), 
+        builder: (context) => Register(userId: widget.userId))
     );
   }
 
