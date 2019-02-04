@@ -34,7 +34,7 @@ class RegisterState extends State<Register> {
   String _phone;
   String _charge;
   File _picture;
-  var _compressedPic;
+  File _compressedPic;
 
   Map<String, List<String>> _availabilityMap = new Map<String, List<String>>();
   List<int> _selectedItemsPositions = new List<int>();
@@ -49,6 +49,7 @@ class RegisterState extends State<Register> {
   bool _isLoading;
   bool _isIos;
   bool _isPictureSelected;
+  bool _isPictureCompressed;
 
   String _errorMessage;
 
@@ -56,7 +57,9 @@ class RegisterState extends State<Register> {
   void initState() {
     super.initState();
     _isLoading = false;
-    // _isPictureSelected = false;
+    _isPictureSelected = false;
+    _isPictureCompressed = false;
+
     _countryFocusNode.addListener(() {
       if (_countryFocusNode.hasFocus) {
         _countryFocusNode.unfocus();
@@ -290,9 +293,14 @@ class RegisterState extends State<Register> {
           Padding(
             padding: EdgeInsets.only(left: 10.0),
           ),
-          _isPictureSelected != null ? _isPictureSelected ? CircleAvatar(
+          // if user hasn't clicked add picture yet, show empty container
+          // if picture compressed has been completed, show an avatar with the compressed image,
+          // otherwise show a circular progress indicator
+          _isPictureSelected ? 
+          (_isPictureCompressed ? CircleAvatar(
             backgroundImage: Image.file(_compressedPic).image,
-          ) : CircularProgressIndicator() : Container(height: 0.0, width: 0.0,),
+          ) : CircularProgressIndicator()) 
+          : Container(height: 0.0, width: 0.0,),
         ],
       ),
     );
@@ -308,14 +316,14 @@ class RegisterState extends State<Register> {
               children: <Widget>[
                 GestureDetector(
                   child: Text('Take a picture'),
-                  onTap: _openCamera,
+                  onTap: () => _pictureFunction(ImageSource.camera),
                 ),
-                Padding(
-                  padding: EdgeInsets.all(8.0),
+                Container(
+                  margin: const EdgeInsets.only(top: 20.0, bottom: 20.0),
                 ),
                 GestureDetector(
                   child: Text('Select from gallery'),
-                  onTap: _openGallery,
+                  onTap: () => _pictureFunction(ImageSource.gallery),
                 ),
               ],
             ),
@@ -325,51 +333,33 @@ class RegisterState extends State<Register> {
     );
   }
 
-  // open phone camera
-  _openCamera() async {
+  // Function to execute to either get picture from camera or gallery
+  _pictureFunction(ImageSource selectedSource) async {
     _picture = await ImagePicker.pickImage(
-      source: ImageSource.camera,
+      source: selectedSource,
     );
 
-    Navigator.of(context).pop();
-    // if picture has been selected, set _isPictureSelected and show snackbar for 2 seconds
-    if (_picture != null) {
-      _isLoading = false;
-      print("null? " + (_picture == null).toString());
-      _compressedPic = await _initCompress(_picture);
-      if (_compressedPic != null)
-      {
-        print("File compressed successfully! " + _compressedPic.path);
-        final snackBar = SnackBar(content: Text('Picture added'), duration: Duration(seconds: 2),);
-        _scaffoldKey.currentState.showSnackBar(snackBar);
-
-        setState(() {
-          _isPictureSelected = true; 
-        });
-      }
-    }
-  }
-
-  // open phone gallery
-  _openGallery() async {
-    _picture = await ImagePicker.pickImage(
-      source: ImageSource.gallery,
-    );
-
+    setState(() {
+      _isPictureSelected = true; 
+    });
+    // close pop-up dialog
     Navigator.of(context).pop();
 
     // if picture has been selected, set _isPictureSelected and show snackbar for 2 seconds
     if (_picture != null) {
       _isLoading = false;
-      _compressedPic = await _initCompress(_picture);
-      if (_compressedPic != null)
+      // Compress image
+      File compressedImage = await _initCompress(_picture);
+      if (compressedImage != null)
       {
-        print("File compressed successfully! " + _compressedPic.path);
+        print("File compressed successfully! " + compressedImage.path);
         final snackBar = SnackBar(content: Text('Picture added'), duration: Duration(seconds: 2),);
         _scaffoldKey.currentState.showSnackBar(snackBar);
 
         setState(() {
-          _isPictureSelected = true; 
+          _isPictureCompressed = true;
+          // since _compressedPic is in the Widget.build context, set its state here
+          _compressedPic = compressedImage;
         });
       }
     }
@@ -408,21 +398,9 @@ class RegisterState extends State<Register> {
     if (_validateAndSave()) {
       try {
         // Implement transaction to Firebase
-        // First upload picture to firebase
+        // First upload *COMPRESSED* picture to firebase
         if (_picture != null) {
-          // Compress image
           
-          // if (File(widget.userId + "-profile.png") != null)
-          //   print(File(widget.userId + "-profile.png").length());
-          // final StorageReference storageRef = 
-          // FirebaseStorage.instance.ref()
-          //       .child("myuser-profile-pictures")
-          //       .child(widget.userId + "-profile");
-
-          // final StorageUploadTask task = 
-          //   storageRef.putFile(_picture);
-          // bool _uploadComplete = task.isSuccessful;
-          // if (_uploadComplete) print("Upload successful!");
         }
         
         // Create new document for user collection
@@ -441,10 +419,13 @@ class RegisterState extends State<Register> {
     });
   }
 
+  // Run a firebase storage upload transaction
   _uploadNewPicture() {
     
   }
 
+  // create *pipe* to connect main thread and the new isolate being spawned
+  /// Takes in [picture] as parameter to ensure changes to [_picture] are maintained
   Future<dynamic> _initCompress(File picture) async {
     final response = new ReceivePort();
     await Isolate.spawn(isolate, response.sendPort);
@@ -454,6 +435,7 @@ class RegisterState extends State<Register> {
     return answer.first;
   }
 
+  // The heavy lifting part of compressing Image
   static Future<File> compressImage(String userId, String path, File picture) async {
     String newPath = path.substring(0, path.lastIndexOf("/")+1);
 
@@ -467,11 +449,11 @@ class RegisterState extends State<Register> {
     } catch (e) { print(e); return null; }
   }
 
+  // isolate entry that will go off to compress image. This avoids freezing the UI on the main thread
   static void isolate(SendPort initialReplyTo) {
     final port = new ReceivePort();
     initialReplyTo.send(port.sendPort);
     port.listen((message) async {
-      // print("message is " + message.toString());
       final userId = message[0] as String;
       final picturePath = message[1] as dynamic;
       final send = message[2] as SendPort;
