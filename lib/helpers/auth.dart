@@ -12,6 +12,8 @@ abstract class BaseAuth {
   Future<String> getUsername(String userId);
 
   Future<void> signOut();
+
+  Future<bool> isMyuser(String userId);
 }
 
 class Auth implements BaseAuth {
@@ -23,9 +25,10 @@ class Auth implements BaseAuth {
     FirebaseUser user = await _firebaseAuth.createUserWithEmailAndPassword(
       email: email, password: password
     );
+    // Also add user to our custom database
     await _firestoreRecord
       .collection('users')
-      .document(user.uid).setData({"username": username, "type": "normal"});
+      .document(user.uid).setData({"username": username, "type": "guest"});
     return user.uid;
   }
 
@@ -45,11 +48,14 @@ class Auth implements BaseAuth {
 
   @override
   Future<String> getUsername(String userId) async {
-    DocumentSnapshot snapshot = await _firestoreRecord
-      .collection('users')
-      .document(userId)
-      .snapshots().first;
-    return snapshot['username'];
+    DocumentSnapshot snapshot = await _firestoreRecord.collection("users").document(userId).get();
+    return snapshot.data['username'];
+  }
+
+  @override
+  Future<bool> isMyuser(String userId) async {
+    DocumentSnapshot snapshot = await _firestoreRecord.collection("users").document(userId).get();
+    return snapshot.data['type'] == 'myuser';
   }
 
   @override

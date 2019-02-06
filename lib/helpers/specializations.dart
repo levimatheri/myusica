@@ -6,7 +6,7 @@ List<String> specialization_list = [
     "Cellist",
     "Trumpeter",
     "Flautist",
-    "Clarinetist"
+    "Clarinetist",
     "Oboist",
     "Saxophonist",
     "Bassoonist",
@@ -14,7 +14,7 @@ List<String> specialization_list = [
     "Horn",
     "Tuba",
     "Trombonist",
-    "Drummer"
+    "Drummer",
     "Choir",
     "Band"
   ];

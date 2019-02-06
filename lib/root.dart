@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+
 import 'package:myusica/helpers/auth.dart';
 import 'package:myusica/login.dart';
 import 'package:myusica/home.dart';
 
 class RootPage extends StatefulWidget {
   final BaseAuth auth;
-
   RootPage({this.auth});
 
   @override
@@ -22,7 +22,7 @@ class _RootPageState extends State<RootPage> {
   AuthStatus authStatus = AuthStatus.NOT_DETERMINED;
   String _userId = "";
   String _username = "";
-
+  bool _isMyuser = false;
   @override
   void initState() {
     super.initState();
@@ -46,6 +46,14 @@ class _RootPageState extends State<RootPage> {
             } 
           });
         });
+        widget.auth.isMyuser(_userId).then((val) {
+          setState(() {
+            if (val != null) {
+              print(_isMyuser);
+              _isMyuser = val;
+            } 
+          });
+        });
       }
     });
   }
@@ -62,9 +70,17 @@ class _RootPageState extends State<RootPage> {
               _username = username;
             } 
           });
+          widget.auth.isMyuser(_userId).then((val) {
+            setState(() {
+              if (val != null) {
+                _isMyuser = val;
+              } 
+            });
+          });
         }
       });
     });
+    
     setState(() {
       authStatus = AuthStatus.LOGGED_IN;
     });
@@ -72,7 +88,9 @@ class _RootPageState extends State<RootPage> {
 
   // set user id to empty and set status to not logged in
   void _onSignedOut() {
+    
     setState(() {
+      print("Called");
       authStatus = AuthStatus.NOT_LOGGED_IN;
       _userId = "";    
     });
@@ -105,7 +123,8 @@ class _RootPageState extends State<RootPage> {
             userId: _userId,
             username: _username,
             auth: widget.auth,
-            onSignedOut: _onSignedOut,
+            isMyuser: _isMyuser,
+            onSignedOut:  _onSignedOut,
           );
         } else return _buildWaitingScreen();
         break;

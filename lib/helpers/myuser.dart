@@ -5,7 +5,7 @@ class Myuser {
   final String city;
   final String state;
   final List<String> specializations;
-  final int charge;
+  final double charge;
   final String phone;
   final String email;
   final String picture;
@@ -23,7 +23,7 @@ class Myuser {
     city: attrs['city'],
     state: attrs['state'],
     specializations: new List<String>.from(attrs['specializations']),
-    charge: attrs['typical_hourly_charge'],
+    charge: attrs['typical_hourly_charge'].toDouble(),
     phone: attrs['phone'],
     email: attrs['email'],
     picture: attrs['picture'],

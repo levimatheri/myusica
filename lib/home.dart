@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -21,8 +23,9 @@ class HomePage extends StatefulWidget {
   final VoidCallback onSignedOut;
   final String userId;
   final String username;
+  final bool isMyuser;
 
-  HomePage({Key key, this.auth, this.userId, this.username, this.onSignedOut}) : super(key: key);
+  HomePage({Key key, this.auth, this.userId, this.username, this.onSignedOut, this.isMyuser}) : super(key: key);
 
   @override
   HomePageState createState() => new HomePageState();
@@ -112,10 +115,11 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin,
                 onTap: _signOut,
               ),
               Divider(),
-              ListTile(
+              // check to see if user is a myuser. If so, don't allow them to register themselves again
+              !widget.isMyuser ? ListTile(
                 title: Text('Register to be a myuser', style: TextStyle(fontSize: 18.0)),
                 onTap: _navigateToRegister,
-              ),
+              ) : Container(height: 0.0, width: 0.0,),
             ],
           ),
         ),
@@ -149,9 +153,10 @@ class Results extends StatefulWidget {
 class ResultsState extends State<Results> {
   /// Build the myuser results based on the stream from the database
   /// Filter by location and availability from the stream
-  // bool isLoading = false;
   static String currCoordinates;
   static var availability;
+
+  List<Widget> myuserItems = new List<Widget>();
 
   /// check if availabilities pass
   bool _areAvailabilitiesSame(Map<String, dynamic> myuserAvail, 
@@ -201,13 +206,17 @@ class ResultsState extends State<Results> {
     // the error of trying to remove while iterating
     docs.removeWhere((d) => toRemove.contains(d.documentID));
 
+    List<Widget> _myuserList = new List<Widget>();
     // Map the prospective myuser(s) to a MyuserItem to be fed into the ListView
-    return docs.map((document) {
-      // print(document.data['name']);
+    _myuserList = docs.map((document) {
       return MyuserItem(
         myuser: Myuser.fromMap(document.data, document.documentID),
       ); 
     }).toList();
+
+    // return list if there are result. Otherwise, show 'No results found'
+    return _myuserList.length > 0 ? _myuserList : 
+      [Container(margin: EdgeInsets.only(top: 60.0), child: Center(child: Text("No results found"),))];
   }
 
   @override

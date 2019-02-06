@@ -122,6 +122,13 @@ class MyuserProfileState extends State<MyuserProfile> {
                           ),
                         ),
                         ListTile(
+                          title: Text("US\$ " + widget.myuser.charge.toStringAsFixed(2)),
+                          leading: Icon(
+                            Icons.monetization_on,
+                            color: Colors.blue[500],
+                          ),
+                        ),
+                        ListTile(
                           title: RichText(
                             text: TextSpan(
                               style: TextStyle(fontSize: 15.0),

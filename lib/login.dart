@@ -245,6 +245,7 @@ class LoginPageState extends State<LoginPage> {
   void _changeFormToSignUp() {
     _formKey.currentState.reset();
     _errorMessage = "";
+    print("Changing to sign up");
     setState(() {
       _formMode = FormMode.SIGNUP;
     });
@@ -253,6 +254,7 @@ class LoginPageState extends State<LoginPage> {
   void _changeFormToLogin() {
     _formKey.currentState.reset();
     _errorMessage = "";
+    print("Changing to login");
     setState(() {
       _formMode = FormMode.LOGIN;
     });

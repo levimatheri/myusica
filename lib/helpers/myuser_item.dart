@@ -21,6 +21,7 @@ class MyuserItemState extends State<MyuserItem> {
     super.initState();
     
     getProfilePicture(widget.myuser).then((value) {
+      print("myuser id " + widget.myuser.id);
       if (value != null) {
         setState(() {
           print("image url " + value);
@@ -37,7 +38,7 @@ class MyuserItemState extends State<MyuserItem> {
         storageBucket: 'gs://myusica-4818e.appspot.com'
       );
       StorageReference imageLink = 
-        storage.ref().child('myuser-profile-pictures').child(myuser.picture + ".jpg");
+        storage.ref().child('myuser-profile-pictures').child(myuser.picture);
       final imageUrl = await imageLink.getDownloadURL();
       return imageUrl;
     } catch (e) {
