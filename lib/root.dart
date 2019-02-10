@@ -87,14 +87,12 @@ class _RootPageState extends State<RootPage> {
   }
 
   // set user id to empty and set status to not logged in
-  void _onSignedOut() {
-    
-    setState(() {
-      print("Called");
-      authStatus = AuthStatus.NOT_LOGGED_IN;
-      _userId = "";    
-    });
-  }
+  // void _onSignedOut() {
+  //   setState(() {
+  //     authStatus = AuthStatus.NOT_LOGGED_IN;
+  //     _userId = "";    
+  //   });
+  // }
 
   Widget _buildWaitingScreen() {
     return Scaffold(
@@ -124,7 +122,7 @@ class _RootPageState extends State<RootPage> {
             username: _username,
             auth: widget.auth,
             isMyuser: _isMyuser,
-            onSignedOut:  _onSignedOut,
+            // onSignedOut:  _onSignedOut,
           );
         } else return _buildWaitingScreen();
         break;

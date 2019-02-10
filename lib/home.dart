@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:myusica/root.dart';
 import 'package:myusica/subs/location_query.dart';
 import 'package:myusica/subs/autocomplete_query.dart';
 import 'package:myusica/subs/availability_query.dart';
@@ -20,12 +21,12 @@ import 'package:latlong/latlong.dart';
 
 class HomePage extends StatefulWidget {
   final BaseAuth auth;
-  final VoidCallback onSignedOut;
+  // final VoidCallback onSignedOut;
   final String userId;
   final String username;
   final bool isMyuser;
 
-  HomePage({Key key, this.auth, this.userId, this.username, this.onSignedOut, this.isMyuser}) : super(key: key);
+  HomePage({Key key, this.auth, this.userId, this.username, this.isMyuser}) : super(key: key);
 
   @override
   HomePageState createState() => new HomePageState();
@@ -56,7 +57,13 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin,
   _signOut() async {
     try {
       await widget.auth.signOut();
-      widget.onSignedOut();
+      // widget.onSignedOut();
+      Navigator.push(
+        context, 
+        MaterialPageRoute(settings: RouteSettings(), 
+          builder: (context) => RootPage(auth: widget.auth)
+        )
+      );
     } catch (e) {
       print(e);
     }
