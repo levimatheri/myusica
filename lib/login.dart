@@ -35,6 +35,9 @@ class LoginPageState extends State<LoginPage> {
       form.save();
       return true;
     }
+    setState(() {
+     _isLoading = false; 
+    });
     return false;
   }
 
@@ -67,6 +70,7 @@ class LoginPageState extends State<LoginPage> {
           if (_isIos) _errorMessage = e.details;
           else _errorMessage = e.message;
         });
+        showAlertDialog(context, ["Okay"], "Error", "Email or password incorrect");
       }
     }
   }
@@ -291,7 +295,7 @@ class LoginPageState extends State<LoginPage> {
             _showConfirmPasswordInput(),
             _showPrimaryButton(),
             _showSecondaryButton(),
-            _showErrorMessage(),
+            //_showErrorMessage(),
           ],
         ),
       ),

@@ -41,18 +41,37 @@ class SpecializationQueryState extends State<SpecializationQuery> {
     );
   }
 
-  _addItem() {
-
-  }
+  // _addItem() {
+  //   return AlertDialog(
+  //     content: SingleChildScrollView(
+  //       child: ListBody(
+  //         children: <Widget>[
+  //           Container(
+  //             margin: const EdgeInsets.only(bottom: 20.0),
+  //           ),
+  //           TextField(
+  //             decoration: InputDecoration(
+  //               hintText: "Enter new specialization"
+  //             ),
+  //           ),
+  //           RaisedButton(
+  //             child: Text("Add"),
+  //             onPressed: null,
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Add specializations'),
-        actions: <Widget>[
-          IconButton(icon: Icon(Icons.add), onPressed: _addItem,)
-        ],
+        // actions: <Widget>[
+        //   IconButton(icon: Icon(Icons.add), onPressed: _addItem,)
+        // ],
       ),
       body: Container(
         child: _buildCheckboxList(),

@@ -5,6 +5,8 @@ import 'dart:async';
 import 'package:myusica/helpers/dialogs.dart';
 import 'package:myusica/helpers/countries.dart';
 import 'package:myusica/helpers/states.dart';
+import 'package:myusica/helpers/country_codes.dart';
+import 'package:myusica/helpers/currency_codes.dart';
 import 'package:myusica/subs/availability_query.dart';
 import 'package:myusica/subs/specialization_query.dart';
 import 'package:myusica/subs/autocomplete_query.dart';
@@ -51,9 +53,7 @@ class RegisterState extends State<Register> {
   List<int> _selectedAvailabilityPos = new List<int>();
   int _availabilityItemsSelected = 0;
 
-  static String _maskSymbol = 'US\$';
-  var _controller = new MoneyMaskedTextController(leftSymbol: _maskSymbol, 
-                            decimalSeparator: '.');
+  MoneyMaskedTextController _chargeController;
 
   FocusNode _countryFocusNode = new FocusNode();
   FocusNode _stateFocusNode = new FocusNode();
@@ -69,6 +69,8 @@ class RegisterState extends State<Register> {
   String _errorMessage;
 
   RegisterState() {
+    _chargeController = new MoneyMaskedTextController(leftSymbol: "", 
+                            decimalSeparator: '.');
     // initialize _updateMap
     _listOfAttributes.forEach((item) {
       if (item == 'availability') {
@@ -85,9 +87,18 @@ class RegisterState extends State<Register> {
     });
   }
 
+  String _getMask(String country) {
+    String countryCode = 
+      country_codes_map.keys.firstWhere(
+        (k) => country_codes_map[k] == country, orElse: () => ''
+      );
+    return currency_codes_map[countryCode];
+  }
+
   @override
   void initState() {
     super.initState();
+
     _isLoading = false;
     _isPictureSelected = false;
     _isPictureCompressed = false;
@@ -138,12 +149,13 @@ class RegisterState extends State<Register> {
             }
           } else {
             setState(() {
-            _country = result; 
+              _country = result; 
+              _chargeController = new MoneyMaskedTextController(leftSymbol: _getMask(result), decimalSeparator: ".");
             });
           }
         } else if (textController == _stateTextController) {
           setState(() {
-           _state = result; 
+            _state = result; 
           });
         }
       }
@@ -175,8 +187,11 @@ class RegisterState extends State<Register> {
             _showCountryInput(),
             _country == 'United States' ? _showStateInput() : Container(height: 0.0, width: 0.0,),
             _showChargeInput(),
+            Container(margin: EdgeInsets.only(bottom: 20.0),),
             _showSpecializationInput(),
+            Container(margin: EdgeInsets.only(bottom: 10.0),),
             _showAvailabilityInput(),
+            Container(margin: EdgeInsets.only(bottom: 10.0),),
             _showPictureInput(),
             _showDoneButton()
           ],
@@ -326,11 +341,11 @@ class RegisterState extends State<Register> {
         maxLines: 1,
         autofocus: false,
         keyboardType: TextInputType.number,
-        controller: _controller,
+        controller: _chargeController,
         decoration: InputDecoration(
-          hintText: "Charge per hour",
+          // hintText: "Charge per hour",
           icon: Icon(
-            Icons.account_circle,
+            Icons.monetization_on,
             color: Colors.blue[200],
           ),
         ),
@@ -339,7 +354,8 @@ class RegisterState extends State<Register> {
         ],
         validator: (value) => value.isEmpty ? 'Charge cannot be empty' : null,
         onSaved: (value) {
-          _charge = double.parse(value.substring(value.indexOf(_maskSymbol) + _maskSymbol.length, value.length));
+          String _regExMatch = new RegExp(r"[a-zA-Z]+").stringMatch(value);
+          _charge = double.parse(value.substring(value.indexOf(_regExMatch) + _regExMatch.length, value.length));
           _updateMap['typical_hourly_charge'] = _charge;
         }
       ),
@@ -347,86 +363,110 @@ class RegisterState extends State<Register> {
   }
 
   Widget _showAvailabilityInput() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 10.0),
-      child: Row(
-        children: [
-          ButtonTheme(
-            buttonColor: Colors.lightBlue,
-            child: new RaisedButton(
-              child: Text('Select availability'),
-              onPressed: () => Navigator.push(context, 
-                MaterialPageRoute(settings: RouteSettings(),
-                builder: (context) => AvailabilityQuery(_selectedAvailabilityPos, _availabilityMap))).then((result) {
-                  if (result != null) {
-                    _availabilityMap = result[0];
-                    // _updateMap['availability'] = result[0];
-                    setState(() {
-                      _availabilityItemsSelected = result[1].length;
-                      _selectedAvailabilityPos = result[1];
-                    });
-                  }
-                }),
-            ),
+    return Column(
+      children: <Widget>[
+        Container(
+          decoration: BoxDecoration( //                    <-- BoxDecoration
+            border: Border(top: BorderSide(), bottom: BorderSide()),
+            color: Colors.lightBlue
           ),
-          Text("   " + _availabilityItemsSelected.toString() + " items selected"), // really bad hack!
-        ],
-      ),
+          child: ListTile(
+            title: Text('Select availability'),
+            subtitle: Text(_availabilityItemsSelected.toString() + " items selected"),
+            onTap: () => Navigator.push(context, 
+              MaterialPageRoute(settings: RouteSettings(),
+              builder: (context) => AvailabilityQuery(_selectedAvailabilityPos, _availabilityMap))).then((result) {
+                if (result != null) {
+                  _availabilityMap = result[0];
+                  // _updateMap['availability'] = result[0];
+                  setState(() {
+                    _availabilityItemsSelected = result[1].length;
+                    _selectedAvailabilityPos = result[1];
+                  });
+                }
+              }),
+          ),
+        ),
+      ],
+    );
+  }
+  
+  Widget _showSpecializationInput() {
+    return Column(
+      children: <Widget>[
+        Container(
+          decoration: BoxDecoration( //                    <-- BoxDecoration
+            border: Border(top: BorderSide(), bottom: BorderSide()),
+            // borderRadius: BorderRadius.circular(0.01),
+            color: Colors.lightBlue
+          ),
+          child: ListTile(
+            title: Text('Select specialization(s)'),
+            subtitle: Text(_specializationsList.length.toString() + " items selected"),
+            onTap: () => Navigator.push(context, 
+              MaterialPageRoute(settings: RouteSettings(),
+              builder: (context) => SpecializationQuery(
+                _specializationsList)
+                )).then((result) {
+                  if (result != null) {
+                    // _updateMap['specializations'] = result[0];
+                    _specializationsList = result[0];
+                  }
+              }),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _showSpecializationInput() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 10.0),
-      child: Row(
-        children: [
-          ButtonTheme(
-            buttonColor: Colors.lightBlue,
-            child: new RaisedButton(
-              child: Text('Select specialization(s)'),
-              onPressed: () => Navigator.push(context, 
-                MaterialPageRoute(settings: RouteSettings(),
-                builder: (context) => SpecializationQuery(
-                  _specializationsList)
-                  )).then((result) {
-                    if (result != null) {
-                      // _updateMap['specializations'] = result[0];
-                      _specializationsList = result[0];
-                    }
-                }),
-            ),
-          ),
-          Text("   " + _specializationsList.length.toString() + " items selected"), // really bad hack!
-        ],
-      ),
-    );
-  }
+  // Widget _showPictureInput() {
+  //    return Padding(
+  //     padding: const EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 10.0),
+  //     child: Row(
+  //       children: [
+  //         ButtonTheme(
+  //           buttonColor: Colors.lightBlue,
+  //           child: new RaisedButton(
+  //             child: Text('Add picture'),
+  //             onPressed: _pictureOptionsDialogBox
+  //           ),
+  //         ),
+  //         Padding(
+  //           padding: EdgeInsets.only(left: 10.0),
+  //         ),
+  //         // if user hasn't clicked add picture yet, show empty container
+  //         // if picture compressed has been completed, show an avatar with the compressed image,
+  //         // otherwise show a circular progress indicator
+  //         _isPictureSelected ? 
+  //         (_isPictureCompressed ? CircleAvatar(
+  //           backgroundImage: Image.file(_compressedPic).image,
+  //         ) : CircularProgressIndicator()) 
+  //         : Container(height: 0.0, width: 0.0,),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _showPictureInput() {
-     return Padding(
-      padding: const EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 10.0),
-      child: Row(
-        children: [
-          ButtonTheme(
-            buttonColor: Colors.lightBlue,
-            child: new RaisedButton(
-              child: Text('Add picture'),
-              onPressed: _pictureOptionsDialogBox
-            ),
+    return Column(
+      children: <Widget>[
+        Container(
+          decoration: BoxDecoration( //                    <-- BoxDecoration
+            border: Border(top: BorderSide(), bottom: BorderSide()),
+            // borderRadius: BorderRadius.circular(0.01),
+            color: Colors.lightBlue
           ),
-          Padding(
-            padding: EdgeInsets.only(left: 10.0),
+          child: ListTile(
+            title: Text('Add profile picture'),
+            trailing: _isPictureSelected ? 
+              (_isPictureCompressed ? CircleAvatar(
+                backgroundImage: Image.file(_compressedPic).image,
+              ) : CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.green[800]),)) 
+              : Container(height: 0.0, width: 0.0,),
+            onTap: _pictureOptionsDialogBox
           ),
-          // if user hasn't clicked add picture yet, show empty container
-          // if picture compressed has been completed, show an avatar with the compressed image,
-          // otherwise show a circular progress indicator
-          _isPictureSelected ? 
-          (_isPictureCompressed ? CircleAvatar(
-            backgroundImage: Image.file(_compressedPic).image,
-          ) : CircularProgressIndicator()) 
-          : Container(height: 0.0, width: 0.0,),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -472,9 +512,12 @@ class RegisterState extends State<Register> {
     // if picture has been selected, set _isPictureSelected and show snackbar for 2 seconds
     if (_picture != null) {
       _isLoading = false;
-      String newPath = _picture.path.substring(0, _picture.path.lastIndexOf("/")+1);
+      String newPath =_picture.path.substring(0, _picture.path.lastIndexOf("/")+1);
       // if compressed file already exists don't bother
-      if (!File(newPath + widget.userId + "-profile.png").existsSync()) {
+      if (!File(newPath + widget.userId + "-profile-" + _picture.path.substring(_picture.path.lastIndexOf("/")+1, _picture.path.lastIndexOf(".")) + ".png").existsSync()) {
+        setState(() {
+          _isPictureCompressed = false;
+        });
         // Compress image
         File compressedImage = await _initCompress(_picture);
         if (compressedImage != null)
@@ -493,7 +536,7 @@ class RegisterState extends State<Register> {
         setState(() {
           _isPictureCompressed = true;
           // since _compressedPic is in the Widget.build context, set its state here
-          _compressedPic = File(newPath + widget.userId + "-profile.png");
+          _compressedPic = File(newPath + widget.userId + "-profile-" + _picture.path.substring(_picture.path.lastIndexOf("/")+1, _picture.path.lastIndexOf(".")) + ".png");
         });
       }  
       _updateMap['picture'] = widget.userId + "-profile.png";
@@ -651,13 +694,14 @@ class RegisterState extends State<Register> {
     String newPath = path.substring(0, path.lastIndexOf("/")+1);
 
     try {
-      print(picture == null);
+      print(picture.path);
       img.Image image = img.decodeImage(picture.readAsBytesSync());
       // Resize image to 120x? thumbnail
       img.Image thumbnail = img.copyResize(image, 120);
 
       // this is an asynchronous operation since we want to return the compressed file
-      return File(newPath + userId + "-profile.png").writeAsBytes(img.encodePng(thumbnail));
+      return File(newPath + userId + "-profile-" + picture.path.substring(picture.path.lastIndexOf("/")+1, picture.path.lastIndexOf(".")) + ".png")
+        .writeAsBytes(img.encodePng(thumbnail));
     } catch (e) { print(e); return null; }
   }
 
