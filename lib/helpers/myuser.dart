@@ -4,6 +4,7 @@ class Myuser {
   final String name;
   final String city;
   final String state;
+  final String country;
   final List<String> specializations;
   final double charge;
   final String phone;
@@ -13,7 +14,7 @@ class Myuser {
   final Map<String, dynamic> availability;
   final String type; // not sure we need this since all Myusers are type=myuser
 
-  const Myuser({this.id, this.name, this.city, this.state,
+  const Myuser({this.id, this.name, this.city, this.state, this.country,
       this.specializations, this.charge, this.phone, this.email,
       this.picture, this.picUrl, this.availability, this.type});
 
@@ -22,6 +23,7 @@ class Myuser {
     name: attrs['name'],
     city: attrs['city'],
     state: attrs['state'],
+    country: attrs['country'],
     specializations: new List<String>.from(attrs['specializations']),
     charge: attrs['typical_hourly_charge'].toDouble(),
     phone: attrs['phone'],

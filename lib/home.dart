@@ -8,6 +8,7 @@ import 'package:myusica/subs/location_query.dart';
 import 'package:myusica/subs/autocomplete_query.dart';
 import 'package:myusica/subs/availability_query.dart';
 import 'package:myusica/subs/register.dart';
+import 'package:myusica/subs/my_account.dart';
 import 'package:myusica/helpers/myuser_item.dart';
 import 'package:myusica/helpers/myuser.dart';
 import 'package:myusica/helpers/access.dart';
@@ -73,7 +74,15 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin,
     Navigator.push(
       context, 
       MaterialPageRoute(settings: RouteSettings(), 
-        builder: (context) => Register(userId: widget.userId))
+        builder: (context) => Register(userId: widget.userId, isFromProfile: false,))
+    );
+  }
+
+  _navigateToProfile() {
+    Navigator.push(
+      context, 
+      MaterialPageRoute(settings: RouteSettings(), 
+        builder: (context) => MyAccount(auth: widget.auth, userId: widget.userId))
     );
   }
 
@@ -110,7 +119,7 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin,
               ),
               ListTile(
                 title: Text('My account', style: TextStyle(fontSize: 18.0)),
-                onTap: null,
+                onTap:  _navigateToProfile,
               ),
               // TODO: Add chat link
               // ListTile(

@@ -7,6 +7,8 @@ import 'package:myusica/helpers/countries.dart';
 import 'package:myusica/helpers/states.dart';
 import 'package:myusica/helpers/country_codes.dart';
 import 'package:myusica/helpers/currency_codes.dart';
+import 'package:myusica/helpers/myuser.dart';
+import 'package:myusica/helpers/pos_to_availability.dart';
 import 'package:myusica/subs/availability_query.dart';
 import 'package:myusica/subs/specialization_query.dart';
 import 'package:myusica/subs/autocomplete_query.dart';
@@ -20,13 +22,17 @@ import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image/image.dart' as img;
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:collection/collection.dart';
 
 
 /// Myuser registration
 class Register extends StatefulWidget {
   final String userId;
-  Register({this.userId});
-  RegisterState createState() => new RegisterState();
+  final bool isFromProfile;
+  final Myuser myuser;
+  Register({this.userId, this.isFromProfile, this.myuser});
+  RegisterState createState() => new RegisterState(isFromProfile);
 }
 
 class RegisterState extends State<Register> {
@@ -57,6 +63,10 @@ class RegisterState extends State<Register> {
 
   FocusNode _countryFocusNode = new FocusNode();
   FocusNode _stateFocusNode = new FocusNode();
+  TextEditingController _nameTextController = new TextEditingController();
+  TextEditingController _cityTextController = new TextEditingController();
+  TextEditingController _emailTextController = new TextEditingController();
+  TextEditingController _phoneTextController = new TextEditingController();
   TextEditingController _countryTextController = new TextEditingController();   
   TextEditingController _stateTextController = new TextEditingController();                            
 
@@ -65,10 +75,12 @@ class RegisterState extends State<Register> {
   bool _isPictureSelected;
   bool _isPictureCompressed;
   bool _isUploadDone;
+  bool _isFromProfile;
 
   String _errorMessage;
 
-  RegisterState() {
+  RegisterState(bool isFromProfile) {
+    this._isFromProfile = isFromProfile;
     _chargeController = new MoneyMaskedTextController(leftSymbol: "", 
                             decimalSeparator: '.');
     // initialize _updateMap
@@ -98,6 +110,29 @@ class RegisterState extends State<Register> {
   @override
   void initState() {
     super.initState();
+
+    if (widget.isFromProfile) {
+      _nameTextController.text = widget.myuser.name;
+      _cityTextController.text = widget.myuser.city;
+      _phoneTextController.text = widget.myuser.phone;
+      _emailTextController.text = widget.myuser.email;
+      _stateTextController.text = widget.myuser.state;
+      _countryTextController.text = widget.myuser.country;
+      _chargeController = new MoneyMaskedTextController(
+        leftSymbol: _getMask(widget.myuser.country), decimalSeparator: ".", initialValue: widget.myuser.charge);
+
+      setState(() {
+       _specializationsList = widget.myuser.specializations; 
+      });
+
+      List<int> availChecks =_getAvailabilityIndicesFromProfile();
+      if (availChecks != null) {
+        _selectedAvailabilityPos = availChecks;
+        setState(() {
+         _availabilityItemsSelected =_selectedAvailabilityPos.length; 
+        });
+      }
+    }
 
     _isLoading = false;
     _isPictureSelected = false;
@@ -162,6 +197,25 @@ class RegisterState extends State<Register> {
     }); // put result in text field
   }
 
+  List<int> _getAvailabilityIndicesFromProfile() {
+    List<int> toReturn = List<int>();
+    var keyList = widget.myuser.availability.keys.toList();
+    Function eq = const ListEquality().equals;
+    if (keyList.length > 0) {
+      keyList.forEach((key) {
+        widget.myuser.availability[key].forEach((k, v) {
+          int toAdd = pos_to_avail.keys.firstWhere((posKey) =>  pos_to_avail[posKey] == key + "," + k.toString(), orElse: () => null);
+          if (toAdd != null) {
+            print("toadd: $toAdd");
+            toReturn.add(toAdd);
+          }
+        });
+      });
+      return toReturn;
+    }
+    return null; 
+  }
+
   /// Convert an address to coordinates. Useful when we'll want to find distances
   Future<String> _addressToCoordinates(String address) async {
     List<Placemark> placemark = await Geolocator().placemarkFromAddress(address);
@@ -204,6 +258,7 @@ class RegisterState extends State<Register> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(0.0, 6.0, 0.0, 10.0),
       child: TextFormField(
+        controller: _nameTextController,
         maxLines: 1,
         autofocus: false,
         decoration: InputDecoration(
@@ -226,6 +281,7 @@ class RegisterState extends State<Register> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 10.0),
       child: TextFormField(
+        controller: _cityTextController,
         maxLines: 1,
         autofocus: false,
         decoration: InputDecoration(
@@ -292,6 +348,7 @@ class RegisterState extends State<Register> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 10.0),
       child: TextFormField(
+        controller: _emailTextController,
         maxLines: 1,
         keyboardType: TextInputType.emailAddress,
         autofocus: false,
@@ -315,6 +372,7 @@ class RegisterState extends State<Register> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 10.0),
       child: TextFormField(
+        controller: _phoneTextController,
         maxLines: 1,
         autofocus: false,
         keyboardType: TextInputType.phone,
@@ -460,7 +518,8 @@ class RegisterState extends State<Register> {
             title: Text('Add profile picture'),
             trailing: _isPictureSelected ? 
               (_isPictureCompressed ? CircleAvatar(
-                backgroundImage: Image.file(_compressedPic).image,
+                backgroundImage: !_isFromProfile ? Image.file(_compressedPic).image 
+                                                  : CachedNetworkImageProvider(widget.myuser.picUrl),
               ) : CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.green[800]),)) 
               : Container(height: 0.0, width: 0.0,),
             onTap: _pictureOptionsDialogBox
@@ -511,7 +570,10 @@ class RegisterState extends State<Register> {
 
     // if picture has been selected, set _isPictureSelected and show snackbar for 2 seconds
     if (_picture != null) {
-      _isLoading = false;
+      setState(() {
+        _isLoading = false;
+        _isFromProfile = false;
+      });
       String newPath =_picture.path.substring(0, _picture.path.lastIndexOf("/")+1);
       // if compressed file already exists don't bother
       if (!File(newPath + widget.userId + "-profile-" + _picture.path.substring(_picture.path.lastIndexOf("/")+1, _picture.path.lastIndexOf(".")) + ".png").existsSync()) {

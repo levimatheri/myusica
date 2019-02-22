@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:myusica/helpers/myuser.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:myusica/subs/register.dart';
 
 class MyuserProfile extends StatefulWidget {
   final Myuser myuser;
   final String imageUrl;
-  MyuserProfile({this.myuser, this.imageUrl});
+  final bool isFromMyAccount; // boolean showing if user has come to this page from MyAccount page 
+  MyuserProfile({this.myuser, this.imageUrl, this.isFromMyAccount});
 
   @override
   MyuserProfileState createState() => new MyuserProfileState();  
@@ -13,13 +15,23 @@ class MyuserProfile extends StatefulWidget {
 
 class MyuserProfileState extends State<MyuserProfile> {
   String ppString;
+  bool isFromMyAccount;
   List<String> days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   @override
   void initState() {
     super.initState();
     setState(() {
      ppString = widget.imageUrl; 
+     isFromMyAccount = widget.isFromMyAccount;
     });
+  }
+
+  _navigateToRegister() {
+    Navigator.push(
+      context, 
+      MaterialPageRoute(settings: RouteSettings(), 
+        builder: (context) => Register(myuser: widget.myuser, isFromProfile: true,))
+    );
   }
 
   // create availability tile item from availability map
@@ -64,11 +76,18 @@ class MyuserProfileState extends State<MyuserProfile> {
       appBar: AppBar(
         title: Text("Profile"),
         actions: <Widget>[
-          FlatButton(
+          !isFromMyAccount ? FlatButton(
             child: Text("Chat", style: TextStyle(fontSize: 17.0),),
             onPressed: null,
-          ),
-        ],
+          ) : Container(height: 0.0, width: 0.0,),
+          isFromMyAccount ? IconButton(
+            icon: Icon(
+              Icons.edit,
+            ),
+            tooltip: 'Edit profile',
+            onPressed: _navigateToRegister,
+          ) : null,
+        ]
       ),
       body: Scrollbar(
         child: SingleChildScrollView(
