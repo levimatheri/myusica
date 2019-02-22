@@ -1,3 +1,4 @@
+// Mapping from index to day and time for availability selection used in register.dart
 Map<int, String> pos_to_avail = {
   0: "Sunday,morning",
   1: "Sunday,afternoon",

@@ -26,6 +26,9 @@ class MyuserProfileState extends State<MyuserProfile> {
     });
   }
 
+  /// navigate to Register page
+  /// [isFromProfile] set to true to show register code that this is going to be a profile update,
+  /// not an initial Myuser registration
   _navigateToRegister() {
     Navigator.push(
       context, 

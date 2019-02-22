@@ -23,8 +23,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image/image.dart' as img;
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:collection/collection.dart';
-
 
 /// Myuser registration
 class Register extends StatefulWidget {
@@ -99,6 +97,7 @@ class RegisterState extends State<Register> {
     });
   }
 
+  // get the currency mask from a given country
   String _getMask(String country) {
     String countryCode = 
       country_codes_map.keys.firstWhere(
@@ -111,6 +110,8 @@ class RegisterState extends State<Register> {
   void initState() {
     super.initState();
 
+    // if user came here from Profile page, pre-fill their details 
+    // because they came here to update their profile
     if (widget.isFromProfile) {
       _nameTextController.text = widget.myuser.name;
       _cityTextController.text = widget.myuser.city;
@@ -197,16 +198,19 @@ class RegisterState extends State<Register> {
     }); // put result in text field
   }
 
+  // from the availability items obtained from the myuser's profile, 
+  // get the indices that will be used to pre-check the checkboxes in Availability Screen
   List<int> _getAvailabilityIndicesFromProfile() {
     List<int> toReturn = List<int>();
-    var keyList = widget.myuser.availability.keys.toList();
-    Function eq = const ListEquality().equals;
+    var keyList = widget.myuser.availability.keys.toList(); // Myuser's available DAYS
     if (keyList.length > 0) {
+      // go through each DAY and for each time of day that the myuser is available, 
+      // use pos_to_availability map to get the index
       keyList.forEach((key) {
         widget.myuser.availability[key].forEach((k, v) {
           int toAdd = pos_to_avail.keys.firstWhere((posKey) =>  pos_to_avail[posKey] == key + "," + k.toString(), orElse: () => null);
           if (toAdd != null) {
-            print("toadd: $toAdd");
+            // print("toadd: $toAdd");
             toReturn.add(toAdd);
           }
         });

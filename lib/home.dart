@@ -70,6 +70,7 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin,
     }
   }
 
+  // Go to Myuser registration page
   _navigateToRegister() {
     Navigator.push(
       context, 
@@ -78,6 +79,7 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin,
     );
   }
 
+  // Go to Profile page
   _navigateToProfile() {
     Navigator.push(
       context, 
