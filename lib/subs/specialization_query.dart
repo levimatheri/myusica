@@ -68,6 +68,10 @@ class SpecializationQueryState extends State<SpecializationQuery> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context, [widget.selected]),
+        ),
         title: Text('Add specializations'),
         // actions: <Widget>[
         //   IconButton(icon: Icon(Icons.add), onPressed: _addItem,)

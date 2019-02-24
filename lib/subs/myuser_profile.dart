@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:myusica/helpers/myuser.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:myusica/subs/register.dart';
+import 'package:myusica/helpers/auth.dart';
 
 class MyuserProfile extends StatefulWidget {
   final Myuser myuser;
   final String imageUrl;
   final bool isFromMyAccount; // boolean showing if user has come to this page from MyAccount page 
-  MyuserProfile({this.myuser, this.imageUrl, this.isFromMyAccount});
+  final BaseAuth auth;
+  MyuserProfile({this.myuser, this.imageUrl, this.isFromMyAccount, this.auth});
 
   @override
   MyuserProfileState createState() => new MyuserProfileState();  
@@ -33,7 +35,9 @@ class MyuserProfileState extends State<MyuserProfile> {
     Navigator.push(
       context, 
       MaterialPageRoute(settings: RouteSettings(), 
-        builder: (context) => Register(myuser: widget.myuser, isFromProfile: true,))
+        builder: (context) => Register(
+          myuser: widget.myuser, auth: widget.auth, userId: widget.myuser.id, isFromProfile: true, imageUrl: ppString, )
+        )
     );
   }
 
@@ -69,8 +73,6 @@ class MyuserProfileState extends State<MyuserProfile> {
     });
     return textSpanList;
   }
-
-
 
   @override
   Widget build(BuildContext context) {

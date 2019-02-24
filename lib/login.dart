@@ -28,6 +28,9 @@ class LoginPageState extends State<LoginPage> {
   String _password;
   String _errorMessage;
 
+  TextEditingController _passwordTextController = TextEditingController();
+  TextEditingController _confirmPasswordTextController = TextEditingController();
+
   // check if form is valid before logging in or signing up
   bool _validateAndSave() {
     final form = _formKey.currentState;
@@ -54,6 +57,14 @@ class LoginPageState extends State<LoginPage> {
           userId = await widget.auth.signIn(_email, _password);
           print('Signed in user: $userId');
         } else {
+          if (_confirmPasswordTextController.text !=_passwordTextController.text) {
+            setState(() {
+             _isLoading = false; 
+            });
+            showAlertDialog(context, ["Okay"], "ERROR", "Passwords do not match");
+            return;
+          }
+          // print("i am here");
           userId = await widget.auth.signUp(_username, _email, _password);
           print('Signed up user: $userId');
         }
@@ -165,6 +176,7 @@ class LoginPageState extends State<LoginPage> {
       padding: _formMode == FormMode.LOGIN ? EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 20.0) 
                                   : EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 10.0),
       child: new TextFormField(
+        controller: _passwordTextController,
         maxLines: 1,
         obscureText: true,
         autofocus: false,
@@ -185,6 +197,7 @@ class LoginPageState extends State<LoginPage> {
     return _formMode == FormMode.SIGNUP ? Padding(
       padding: const EdgeInsets.fromLTRB(0.0, 15.0, 0.0, 0.0),
       child: new TextFormField(
+        controller: _confirmPasswordTextController,
         maxLines: 1,
         obscureText: true,
         autofocus: false,
@@ -201,13 +214,13 @@ class LoginPageState extends State<LoginPage> {
             showAlertDialog(context, ["Okay"], "Error", "Please confirm password");
             return;
           }
-          else {
-            if (value != _password) 
-            {
-              showAlertDialog(context, ["Okay"], "Error", "Passwords do not match");
-              return;
-            }
-          }
+          // else {
+          //   if (value != _password) 
+          //   {
+          //     showAlertDialog(context, ["Okay"], "Error", "Passwords do not match");
+          //     return;
+          //   }
+          // }
         }
       ),
     ) : Container();

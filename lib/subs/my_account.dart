@@ -53,6 +53,6 @@ class MyAccountState extends State<MyAccount> {
         title: Text("Profile"),
       ),
     ) : isLoading ? Center(child: CircularProgressIndicator()) 
-                  : MyuserProfile(myuser: thisMyuser, imageUrl: myuserPicUrl, isFromMyAccount: true,);
+                  : MyuserProfile(auth: widget.auth, myuser: thisMyuser, imageUrl: myuserPicUrl, isFromMyAccount: true,);
   }
 }

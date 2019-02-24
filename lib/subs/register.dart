@@ -9,9 +9,12 @@ import 'package:myusica/helpers/country_codes.dart';
 import 'package:myusica/helpers/currency_codes.dart';
 import 'package:myusica/helpers/myuser.dart';
 import 'package:myusica/helpers/pos_to_availability.dart';
+import 'package:myusica/helpers/auth.dart';
 import 'package:myusica/subs/availability_query.dart';
 import 'package:myusica/subs/specialization_query.dart';
 import 'package:myusica/subs/autocomplete_query.dart';
+import 'package:myusica/home.dart';
+import 'package:myusica/root.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,13 +26,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image/image.dart' as img;
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:collection/collection.dart';
 
 /// Myuser registration
 class Register extends StatefulWidget {
   final String userId;
   final bool isFromProfile;
   final Myuser myuser;
-  Register({this.userId, this.isFromProfile, this.myuser});
+  final String imageUrl;
+  final BaseAuth auth;
+  Register({@required this.userId, @required this.isFromProfile, this.myuser, this.imageUrl, this.auth});
   RegisterState createState() => new RegisterState(isFromProfile);
 }
 
@@ -50,12 +56,17 @@ class RegisterState extends State<Register> {
   List<String> _listOfAttributes = ['type', 'name', 'city', 'state', 'country', 'coordinates', 'email', 
                   'phone', 'typical_hourly_charge', 'specializations', 'availability', 'picture'];
 
-  Map<String, dynamic> _updateMap = new Map<String, dynamic>(); // this will be passed to _updateUser
+  Map<String, dynamic> _registerMap = new Map<String, dynamic>(); // this will be passed to _registerUser
+  Map<String, dynamic> _updateMap = new Map<String, dynamic>(); // this will be passed to _updateMyuser
 
-  Map<String, List<String>> _availabilityMap = new Map<String, List<String>>();
+ 
   List<String> _specializationsList = new List<String>();
   List<int> _selectedAvailabilityPos = new List<int>();
+
+  Map<String, List<String>> _availabilityMap = new Map<String, List<String>>();
   int _availabilityItemsSelected = 0;
+  List<int> availChecks = new List<int>();
+
 
   MoneyMaskedTextController _chargeController;
 
@@ -81,18 +92,18 @@ class RegisterState extends State<Register> {
     this._isFromProfile = isFromProfile;
     _chargeController = new MoneyMaskedTextController(leftSymbol: "", 
                             decimalSeparator: '.');
-    // initialize _updateMap
+    // initialize _registerMap
     _listOfAttributes.forEach((item) {
       if (item == 'availability') {
-        _updateMap[item] = new Map<String, Map<String, bool>>();
+        _registerMap[item] = new Map<String, Map<String, bool>>();
       } else if (item == 'specializations') {
-        _updateMap[item] = new List<String>();
+        _registerMap[item] = new List<String>();
       } else if (item == 'type') {
-        _updateMap[item] = 'myuser'; // set this user to myuser
+        _registerMap[item] = 'myuser'; // set this user to myuser
       } else if (item == 'typical_hourly_charge') {
-        _updateMap[item] = 0.0;
+        _registerMap[item] = 0.0;
       } else {
-        _updateMap[item] = "";
+        _registerMap[item] = "";
       }
     });
   }
@@ -123,12 +134,12 @@ class RegisterState extends State<Register> {
         leftSymbol: _getMask(widget.myuser.country), decimalSeparator: ".", initialValue: widget.myuser.charge);
 
       setState(() {
-       _specializationsList = widget.myuser.specializations; 
+       _specializationsList = List.from(widget.myuser.specializations); 
       });
 
-      List<int> availChecks =_getAvailabilityIndicesFromProfile();
+      availChecks = _getAvailabilityIndicesFromProfile();
       if (availChecks != null) {
-        _selectedAvailabilityPos = availChecks;
+        _selectedAvailabilityPos = List.from(availChecks); // CLONE availChecks using List.from()
         setState(() {
          _availabilityItemsSelected =_selectedAvailabilityPos.length; 
         });
@@ -178,17 +189,17 @@ class RegisterState extends State<Register> {
         if (textController == _countryTextController) {
           // if state has been inputted, we check to see if country is US
           // if not, show alert dialog
-          if (_state != null && _state.length != 0) {
-            if (result != 'United States') {
-              showAlertDialog(context, ["Okay"], "Error!", "$_state state not found in $result");
-              _countryTextController.clear();
-            }
-          } else {
+          // if (_state != null && _state.length != 0) {
+          //   if (result != 'United States') {
+          //     showAlertDialog(context, ["Okay"], "Error!", "$_state state not found in $result");
+          //     _countryTextController.clear();
+          //   }
+          // } else {
             setState(() {
               _country = result; 
               _chargeController = new MoneyMaskedTextController(leftSymbol: _getMask(result), decimalSeparator: ".");
             });
-          }
+          // }
         } else if (textController == _stateTextController) {
           setState(() {
             _state = result; 
@@ -275,7 +286,7 @@ class RegisterState extends State<Register> {
         validator: (value) => value.isEmpty ? 'Name cannot be empty' : null,
         onSaved: (value) {
           _name = value;
-          _updateMap['name'] = value;
+          _registerMap['name'] = value;
         }
       ),
     );
@@ -298,7 +309,7 @@ class RegisterState extends State<Register> {
         validator: (value) => value.isEmpty ? 'City/Town cannot be empty' : null,
         onSaved: (value) {
           _city = value;
-          _updateMap['city'] = value;
+          _registerMap['city'] = value;
         }
       ),
     );
@@ -320,7 +331,7 @@ class RegisterState extends State<Register> {
         // validator: (value) => value.isEmpty ? 'State cannot be empty' : null,
         onSaved: (value) {
           _state = value;
-          _updateMap['state'] = value;
+          _registerMap['state'] = value;
         }
       ),
     );
@@ -342,7 +353,7 @@ class RegisterState extends State<Register> {
         validator: (value) => value.isEmpty ? 'Country cannot be empty' : null,
         onSaved: (value) {
           _country = value;
-          _updateMap['country'] = value;
+          _registerMap['country'] = value;
         }
       ),
     );
@@ -366,7 +377,7 @@ class RegisterState extends State<Register> {
         validator: (value) => value.isEmpty ? 'Email cannot be empty' : null,
         onSaved: (value) {
           _email = value;
-          _updateMap['email'] = value;
+          _registerMap['email'] = value;
         }
       ),
     );
@@ -390,7 +401,7 @@ class RegisterState extends State<Register> {
         validator: (value) => value.isEmpty ? 'Phone cannot be empty' : null,
         onSaved: (value) {
           _phone = value;
-          _updateMap['phone'] = value;
+          _registerMap['phone'] = value;
         }
       ),
     );
@@ -418,7 +429,7 @@ class RegisterState extends State<Register> {
         onSaved: (value) {
           String _regExMatch = new RegExp(r"[a-zA-Z]+").stringMatch(value);
           _charge = double.parse(value.substring(value.indexOf(_regExMatch) + _regExMatch.length, value.length));
-          _updateMap['typical_hourly_charge'] = _charge;
+          _registerMap['typical_hourly_charge'] = _charge;
         }
       ),
     );
@@ -433,18 +444,27 @@ class RegisterState extends State<Register> {
             color: Colors.lightBlue
           ),
           child: ListTile(
-            title: Text('Select availability'),
+            title: !_isFromProfile ? Text('Select availability') : Text('Modify availability'),
             subtitle: Text(_availabilityItemsSelected.toString() + " items selected"),
             onTap: () => Navigator.push(context, 
               MaterialPageRoute(settings: RouteSettings(),
               builder: (context) => AvailabilityQuery(_selectedAvailabilityPos, _availabilityMap))).then((result) {
                 if (result != null) {
                   _availabilityMap = result[0];
-                  // _updateMap['availability'] = result[0];
+                  // _registerMap['availability'] = result[0];
                   setState(() {
                     _availabilityItemsSelected = result[1].length;
                     _selectedAvailabilityPos = result[1];
                   });
+
+                  if (_isFromProfile) {
+                    // check if new and old availability options are same
+                    // if not update the _updateMap
+                    Function eq = const ListEquality().equals;
+                    if (!eq(_selectedAvailabilityPos, availChecks)) {
+                      _updateMap['availability_plem'] = _selectedAvailabilityPos;
+                    }
+                  }
                 }
               }),
           ),
@@ -463,7 +483,7 @@ class RegisterState extends State<Register> {
             color: Colors.lightBlue
           ),
           child: ListTile(
-            title: Text('Select specialization(s)'),
+            title: !_isFromProfile ? Text('Select specialization(s)') : Text('Modify specialization(s)'),
             subtitle: Text(_specializationsList.length.toString() + " items selected"),
             onTap: () => Navigator.push(context, 
               MaterialPageRoute(settings: RouteSettings(),
@@ -471,8 +491,17 @@ class RegisterState extends State<Register> {
                 _specializationsList)
                 )).then((result) {
                   if (result != null) {
-                    // _updateMap['specializations'] = result[0];
+                    // _registerMap['specializations'] = result[0];
                     _specializationsList = result[0];
+
+                    if (_isFromProfile) {
+                      // compare the initial specialization list with the modified one
+                      // if they are different, update the _updateMap
+                      Function eq = const ListEquality().equals;
+                      if (!eq(_specializationsList, widget.myuser.specializations)) {
+                        _updateMap['specializations'] = _specializationsList;
+                      }
+                    }
                   }
               }),
           ),
@@ -519,13 +548,12 @@ class RegisterState extends State<Register> {
             color: Colors.lightBlue
           ),
           child: ListTile(
-            title: Text('Add profile picture'),
+            title: !_isFromProfile ? Text('Add profile picture') : Text('Change profile picture'),
             trailing: _isPictureSelected ? 
               (_isPictureCompressed ? CircleAvatar(
-                backgroundImage: !_isFromProfile ? Image.file(_compressedPic).image 
-                                                  : CachedNetworkImageProvider(widget.myuser.picUrl),
+                backgroundImage: Image.file(_compressedPic).image
               ) : CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.green[800]),)) 
-              : Container(height: 0.0, width: 0.0,),
+              : (_isFromProfile ? CircleAvatar(backgroundImage: CachedNetworkImageProvider(widget.imageUrl),) : Container(height: 0.0, width: 0.0,)),
             onTap: _pictureOptionsDialogBox
           ),
         ),
@@ -560,6 +588,28 @@ class RegisterState extends State<Register> {
     );
   }
 
+  Future<bool> _imageTooBigDialogBox() {
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: Text('The image you selected is too large. Compression is recommended'),
+          title: Text('Processing error'),
+          actions: <Widget>[
+            FlatButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text('Compress'),
+            ),
+            FlatButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('Cancel'),
+            )
+          ],
+        );
+      }
+    );
+  }
+
   // Function to execute to either get picture from camera or gallery
   _pictureFunction(ImageSource selectedSource) async {
     _picture = await ImagePicker.pickImage(
@@ -569,6 +619,7 @@ class RegisterState extends State<Register> {
     setState(() {
       _isPictureSelected = true; 
     });
+
     // close pop-up dialog
     Navigator.of(context).pop();
 
@@ -576,36 +627,72 @@ class RegisterState extends State<Register> {
     if (_picture != null) {
       setState(() {
         _isLoading = false;
-        _isFromProfile = false;
       });
-      String newPath =_picture.path.substring(0, _picture.path.lastIndexOf("/")+1);
-      // if compressed file already exists don't bother
-      if (!File(newPath + widget.userId + "-profile-" + _picture.path.substring(_picture.path.lastIndexOf("/")+1, _picture.path.lastIndexOf(".")) + ".png").existsSync()) {
-        setState(() {
-          _isPictureCompressed = false;
-        });
-        // Compress image
-        File compressedImage = await _initCompress(_picture);
-        if (compressedImage != null)
-        {
-          print("File compressed successfully! " + compressedImage.path);
-          final snackBar = SnackBar(content: Text('Picture added'), duration: Duration(seconds: 2),);
-          _scaffoldKey.currentState.showSnackBar(snackBar);
 
+      int picSize = await _picture.length();
+      bool toCompress = false;
+      // check file size first. If too big (equal to or more than 1 MB), prompt compression
+      if (picSize >= 512 * 512) {
+        bool userChoice = await _imageTooBigDialogBox();
+        // if they chose not to compress, return. Otherwise continue with the compression
+        if (!userChoice) {
+          setState(() {
+           _isPictureSelected = false; // stop the circular progress indicator from spinning!
+          });
+          return;
+        } else toCompress = true;
+      } 
+
+      // get image extension
+      String image_extension = _picture.path.substring(_picture.path.lastIndexOf(".")+1, _picture.path.length);
+
+      String newPath =_picture.path.substring(0, _picture.path.lastIndexOf("/")+1);
+      // print("FILLEEEEEE: " + newPath + widget.userId + "-profile-" + _picture.path.substring(_picture.path.lastIndexOf("/")+1, _picture.path.lastIndexOf(".")) + ".png");
+      // return;
+
+      if (toCompress) {
+        // if compressed file already exists don't bother
+        if (!File(newPath + widget.userId + "-profile-" + _picture.path.substring(_picture.path.lastIndexOf("/")+1, _picture.path.lastIndexOf(".")) + ".png").existsSync()) {
+          setState(() {
+            _isPictureCompressed = false;
+          });
+          // Compress image
+          File compressedImage = await _initCompress(_picture);
+          if (compressedImage != null)
+          {
+            image_extension = "png";
+            print("File compressed successfully! " + compressedImage.path);
+            final snackBar = SnackBar(content: Text('Picture added'), duration: Duration(seconds: 2),);
+            _scaffoldKey.currentState.showSnackBar(snackBar);
+
+            setState(() {
+              _isPictureCompressed = true;
+              // since _compressedPic is in the Widget.build context, set its state here
+              _compressedPic = compressedImage;
+            });
+          }
+        } else {
+          image_extension = "png";
           setState(() {
             _isPictureCompressed = true;
             // since _compressedPic is in the Widget.build context, set its state here
-            _compressedPic = compressedImage;
+            _compressedPic = File(newPath + widget.userId + "-profile-" + _picture.path.substring(_picture.path.lastIndexOf("/")+1, _picture.path.lastIndexOf(".")) + ".png");
           });
         }
       } else {
         setState(() {
-          _isPictureCompressed = true;
-          // since _compressedPic is in the Widget.build context, set its state here
-          _compressedPic = File(newPath + widget.userId + "-profile-" + _picture.path.substring(_picture.path.lastIndexOf("/")+1, _picture.path.lastIndexOf(".")) + ".png");
+         _isPictureCompressed = true;
+         _compressedPic = File(_picture.path);
         });
-      }  
-      _updateMap['picture'] = widget.userId + "-profile.png";
+        final snackBar = SnackBar(content: Text('Picture added'), duration: Duration(seconds: 2),);
+        _scaffoldKey.currentState.showSnackBar(snackBar);
+      }
+      !_isFromProfile ? _registerMap['picture'] = widget.userId + "-profile." + image_extension
+                     : _updateMap['picture'] = widget.userId + "-profile." + image_extension;
+    } else {
+      setState(() {
+       _isPictureSelected = false; 
+      });
     }
   }
 
@@ -617,7 +704,7 @@ class RegisterState extends State<Register> {
         minWidth: 200.0,
         height: 42.0,
         color: Colors.orange,
-        child: Text('Done',
+        child: Text(!_isFromProfile ? 'Done' : 'Edit',
                     style: new TextStyle(fontSize: 20.0, color: Colors.white)),
         onPressed: () => _validateAndSubmit(),
       ),
@@ -641,7 +728,7 @@ class RegisterState extends State<Register> {
     });
 
     if (_validateAndSave()) {
-      bool emailValid = RegExp(r"^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(_updateMap['email']);
+      bool emailValid = RegExp(r"^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(_registerMap['email']);
       if (!emailValid) {
         showAlertDialog(context, ["Okay"], "Error!", "Email is invalid");
         setState(() {
@@ -655,13 +742,11 @@ class RegisterState extends State<Register> {
         if (_compressedPic != null) {
           _uploadNewPicture();   
         } else {
+          if (_isFromProfile) _updateMyuser();
           setState(() {
            _isUploadDone = true; 
           });
         }
-
-        // Create new document for user collection
-        
       } on PlatformException catch (e) {
         print('Error: $e');
         setState(() {
@@ -685,7 +770,7 @@ class RegisterState extends State<Register> {
     StorageReference storageReference = 
       FirebaseStorage.instance.ref()
       .child("myuser-profile-pictures")
-      .child(widget.userId + "-profile.png");
+      .child(!_isFromProfile ? _registerMap['picture'] : _updateMap['picture']);
 
     StorageUploadTask uploadTask = storageReference.putFile(_compressedPic);
     uploadTask.onComplete.whenComplete(() {
@@ -694,15 +779,16 @@ class RegisterState extends State<Register> {
        _isLoading = false; 
       });
       print("End upload picture.");
-      _updateUser();
+      if (!_isFromProfile) _registerUser();
+      else _updateMyuser();
     });
   }
 
-  _updateUser() async {
+  _registerUser() async {
     setState(() {
      _isLoading = true; 
     });
-    Map<String, Map<String, bool>> updateAvail = _updateMap['availability'];
+    Map<String, Map<String, bool>> updateAvail = _registerMap['availability'];
     _availabilityMap.forEach((k, v) {
       updateAvail[k] = new Map<String, bool>();
       v.forEach((item) {
@@ -711,8 +797,8 @@ class RegisterState extends State<Register> {
       });
     });
 
-    _updateMap['availability'] = updateAvail;   
-    _updateMap['specializations'] = _specializationsList; 
+    _registerMap['availability'] = updateAvail;   
+    _registerMap['specializations'] = _specializationsList; 
 
     // convert city and country to coordinates
     String address = '';
@@ -722,9 +808,9 @@ class RegisterState extends State<Register> {
       address = _city + ", " + _country;
     }
 
-    _updateMap['coordinates'] = await _addressToCoordinates(address);
+    _registerMap['coordinates'] = await _addressToCoordinates(address);
     
-    print(_updateMap);
+    print(_registerMap);
     // Get a reference to the document in question
     DocumentReference docRef = Firestore.instance
             .collection("users")
@@ -734,14 +820,139 @@ class RegisterState extends State<Register> {
     // // Run transaction to update user to be a myuser
     // // This assumes validation has passed before
     Firestore.instance.runTransaction((transaction) async {
+      await transaction.update(docRef, _registerMap);
+      print("Update complete");
+      setState(() {
+       _isLoading = false; 
+      });
+      bool successAcknowledged = await _successDialogBox();
+      if (successAcknowledged) {
+        Navigator.pushReplacement(
+          context, 
+          MaterialPageRoute(
+            builder: (context) => RootPage(auth: widget.auth)
+          ),
+        );
+      }
+    });
+  }
+
+  _updateMyuser() async {
+    setState(() {
+     _isLoading = true; 
+    });
+    // check if stuff has changed
+    // 1. check name
+    if (_name != widget.myuser.name) _updateMap['name'] = _name;
+    else _updateMap.remove('name');
+    // 2. check email
+    if (_email != widget.myuser.email) _updateMap['email'] = _email;
+    else _updateMap.remove('email');
+    // 3. check phone
+    if (_phone != widget.myuser.phone) _updateMap['phone'] = _phone;
+    else _updateMap.remove('phone');
+    // 4. check city
+    if (_city != widget.myuser.city) _updateMap['city'] = _city;
+    else _updateMap.remove('city');
+    // 5. check country
+    if (_country != widget.myuser.country) _updateMap['country'] = _country;
+    else _updateMap.remove('country');
+    // 6. check state
+    if (_state != null && _state != widget.myuser.state) _updateMap['state'] = _state;
+    else _updateMap.remove('state');
+
+    // if location has changed, get the coordinates
+    // convert city and country to coordinates
+    String address = '';
+    if (_updateMap['state'] != null) {
+      if (_updateMap['city'] != null && _updateMap['country'] != null)
+        address = _city + ", " + _state + ", " + _country;
+    } else {
+      if (_updateMap['city'] != null && _updateMap['country'] != null)
+        address = _city + ", " + _country;
+    }
+
+    print('address: $address');
+    if (address != null && address.length > 0)
+      _updateMap['coordinates'] = await _addressToCoordinates(address);
+    // 7. check charge
+    if (_charge != widget.myuser.charge) _updateMap['typical_hourly_charge'] = _charge;
+    else _updateMap.remove('charge');
+
+    if (_updateMap['availability_plem'] != null) {
+      _updateMap['availability'] = _convertAvailability(_updateMap['availability_plem']);
+      _updateMap.remove('availability_plem');
+    }
+
+    /// [_updateMap] to update Myuser info
+    print("UPDATE MAP:");
+    print(_updateMap);
+
+    
+    
+    // run transaction to update myuser
+    // Get a reference to the document in question
+    DocumentReference docRef = Firestore.instance
+            .collection("users")
+            .document(widget.userId);
+    
+    // // Run transaction to update user to be a myuser
+    // // This assumes validation has passed before
+    Firestore.instance.runTransaction((transaction) async {
       await transaction.update(docRef, _updateMap);
       print("Update complete");
       setState(() {
        _isLoading = false; 
       });
-      // showAlertDialog(context, ["Okay"], "Success!", "Congratulations! You have been registered as a Myuser");
-      Navigator.pop(context);
     });
+
+    bool successAcknowledged = await _successDialogBox();
+    if (successAcknowledged) {
+      Navigator.pushReplacement(
+        context, 
+        MaterialPageRoute(
+          builder: (context) => RootPage(auth: widget.auth)
+        ),
+      );
+    }
+  }
+
+  Future<bool> _successDialogBox() {
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: !_isFromProfile ? Text('Congratulations! You have been registered as a Myuser') : Text('Your profile has been update successfully'),
+          title: Text('Success'),
+          actions: <Widget>[
+            FlatButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text('Okay'),
+            ),
+          ],
+        );
+      }
+    );
+  }
+
+  // convert selected availability indices back to our firebase availability representation
+  Map<String, Map<String, bool>> _convertAvailability(List<int> indices) {
+    Map<String, Map<String, bool>> toReturn = new Map<String, Map<String, bool>>();
+    // get the String availability from index
+    indices.forEach((index) {
+      // grab the string availability
+      String avail = pos_to_avail[index];
+      // get day
+      String day = avail.split(",")[0];
+      // get time of day
+      String time = avail.split(",")[1];
+
+      if (toReturn[day] == null) toReturn[day] = Map<String, bool>();
+
+      toReturn[day].addAll({time: true});
+    });
+
+    return toReturn;
   }
 
   // create *pipe* to connect main thread and the new isolate being spawned
@@ -794,8 +1005,8 @@ class RegisterState extends State<Register> {
     _isIos = Theme.of(context).platform == TargetPlatform.iOS;
     return new Scaffold(
       key: _scaffoldKey,
-      appBar: new AppBar(
-        title: new Text("Register"),
+      appBar: AppBar(
+        title: !_isFromProfile ? Text("Register") : Text("Edit profile"),
       ),
       body: Stack(
         children: <Widget>[
