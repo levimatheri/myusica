@@ -5,12 +5,17 @@ import 'package:myusica/helpers/myuser.dart';
 import 'package:myusica/subs/myuser_profile.dart';
 import 'package:myusica/helpers/myuser_picture.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:myusica/helpers/auth.dart';
 
 /// Myuser item to show on the results tab
 class MyuserItem extends StatefulWidget {
   final Myuser myuser;
+  final BaseAuth auth;
+  final String id;
   MyuserItem({
-    @required this.myuser
+    @required this.myuser,
+    this.auth,
+    this.id
   });
   
   MyuserItemState createState() => MyuserItemState();
@@ -53,7 +58,7 @@ class MyuserItemState extends State<MyuserItem> {
         Navigator.push(
           context, 
           MaterialPageRoute(settings: RouteSettings(),
-            builder: (context) => MyuserProfile(myuser: widget.myuser, imageUrl: ppString)));}
+            builder: (context) => MyuserProfile(id: widget.id, myuser: widget.myuser, imageUrl: ppString, isFromMyAccount: false,)));}
     );
   }
 }

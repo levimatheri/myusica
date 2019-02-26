@@ -145,7 +145,7 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin,
           controller: _tabController,
             children: [
               Container(
-                child: Results(access: access)
+                child: Results(access: access, id: widget.userId)
               ),
               Container (
                 margin: EdgeInsets.only(top: 30.0, left: 20.0, right: 20.0),
@@ -164,7 +164,8 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin,
 /// ==========RESULTS FROM DATABASE SEARCH================
 class Results extends StatefulWidget {
   final Access access;
-  Results({this.access});
+  final String id;
+  Results({this.access, this.id});
   ResultsState createState() => new ResultsState();
 }
 
@@ -229,6 +230,7 @@ class ResultsState extends State<Results> {
     _myuserList = docs.map((document) {
       return MyuserItem(
         myuser: Myuser.fromMap(document.data, document.documentID),
+        id: widget.id
       ); 
     }).toList();
 

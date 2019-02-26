@@ -3,13 +3,15 @@ import 'package:myusica/helpers/myuser.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:myusica/subs/register.dart';
 import 'package:myusica/helpers/auth.dart';
+import 'package:myusica/subs/chat.dart';
 
 class MyuserProfile extends StatefulWidget {
   final Myuser myuser;
   final String imageUrl;
   final bool isFromMyAccount; // boolean showing if user has come to this page from MyAccount page 
   final BaseAuth auth;
-  MyuserProfile({this.myuser, this.imageUrl, this.isFromMyAccount, this.auth});
+  final String id;
+  MyuserProfile({this.myuser, this.imageUrl, this.isFromMyAccount, this.auth, this.id});
 
   @override
   MyuserProfileState createState() => new MyuserProfileState();  
@@ -38,6 +40,15 @@ class MyuserProfileState extends State<MyuserProfile> {
         builder: (context) => Register(
           myuser: widget.myuser, auth: widget.auth, userId: widget.myuser.id, isFromProfile: true, imageUrl: ppString, )
         )
+    );
+  }
+
+  _navigateToChat() {
+    Navigator.push(
+      context, 
+      MaterialPageRoute(settings: RouteSettings(), 
+        builder: (context) => Chat(peerAvatar: ppString, peerId: widget.myuser.id, id: widget.id)
+      )
     );
   }
 
@@ -83,7 +94,7 @@ class MyuserProfileState extends State<MyuserProfile> {
         actions: <Widget>[
           !isFromMyAccount ? FlatButton(
             child: Text("Chat", style: TextStyle(fontSize: 17.0),),
-            onPressed: null,
+            onPressed: _navigateToChat,
           ) : Container(height: 0.0, width: 0.0,),
           isFromMyAccount ? IconButton(
             icon: Icon(
@@ -91,7 +102,7 @@ class MyuserProfileState extends State<MyuserProfile> {
             ),
             tooltip: 'Edit profile',
             onPressed: _navigateToRegister,
-          ) : null,
+          ) : Container(height: 0.0, width: 0.0,),
         ]
       ),
       body: Scrollbar(
@@ -112,11 +123,11 @@ class MyuserProfileState extends State<MyuserProfile> {
                               style: TextStyle(fontWeight: FontWeight.w500)),
                           subtitle: Text(widget.myuser.city + ", " + widget.myuser.state),
                           // if user has no profile picture, just use a person icon
-                          // leading: ppString == null ? CircleAvatar(
-                          //     radius: 30.0,
-                          //     child: Text(widget.myuser.name.substring(0, 1)),
-                          //   ) : 
-                            leading: CircleAvatar(
+                          leading: ppString == null ? CircleAvatar(
+                              radius: 30.0,
+                              child: Text(widget.myuser.name.substring(0, 1)),
+                            ) : 
+                            CircleAvatar(
                               radius: 30.0,
                               backgroundImage: CachedNetworkImageProvider(ppString),
                               backgroundColor: Colors.transparent,

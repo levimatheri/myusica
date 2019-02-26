@@ -38,6 +38,8 @@ dependencies:
   flutter_masked_text: ^0.7.0
   image_picker: ^0.4.5
   image: ^2.0.6
+  fluttertoast: ^2.0.7
+  shared_preferences: ^0.4.2
 
 
 

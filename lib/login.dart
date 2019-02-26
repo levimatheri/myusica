@@ -64,7 +64,6 @@ class LoginPageState extends State<LoginPage> {
             showAlertDialog(context, ["Okay"], "ERROR", "Passwords do not match");
             return;
           }
-          // print("i am here");
           userId = await widget.auth.signUp(_username, _email, _password);
           print('Signed up user: $userId');
         }
