@@ -743,6 +743,7 @@ class RegisterState extends State<Register> {
           _uploadNewPicture();   
         } else {
           if (_isFromProfile) _updateMyuser();
+          else _registerUser();
           setState(() {
            _isUploadDone = true; 
           });

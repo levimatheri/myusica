@@ -15,7 +15,7 @@ abstract class BaseAuth {
 
   Future<bool> isMyuser(String userId);
 
-  Future<Map<String, dynamic>> getMyuser(String userId);
+  Future<Map<String, dynamic>> getUser(String userId);
 }
 
 class Auth implements BaseAuth {
@@ -61,10 +61,11 @@ class Auth implements BaseAuth {
   }
 
   @override
-  Future<Map<String, dynamic>> getMyuser(String userId) async {
+  Future<Map<String, dynamic>> getUser(String userId) async {
     DocumentSnapshot snapshot = await _firestoreRecord.collection("users").document(userId).get();
     return snapshot.data;
   }
+
 
   @override
   Future<void> signOut() {

@@ -9,6 +9,7 @@ import 'package:myusica/subs/autocomplete_query.dart';
 import 'package:myusica/subs/availability_query.dart';
 import 'package:myusica/subs/register.dart';
 import 'package:myusica/subs/my_account.dart';
+import 'package:myusica/subs/chat_main.dart';
 import 'package:myusica/helpers/myuser_item.dart';
 import 'package:myusica/helpers/myuser.dart';
 import 'package:myusica/helpers/access.dart';
@@ -26,8 +27,8 @@ class HomePage extends StatefulWidget {
   final String userId;
   final String username;
   final bool isMyuser;
-
-  HomePage({Key key, this.auth, this.userId, this.username, this.isMyuser}) : super(key: key);
+  final List<Map<String, dynamic>> chats;
+  HomePage({Key key, this.auth, this.userId, this.username, this.isMyuser, this.chats}) : super(key: key);
 
   @override
   HomePageState createState() => new HomePageState();
@@ -88,6 +89,15 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin,
     );
   }
 
+  // Go to Chat main page
+  _navigateToChatMain() {
+    Navigator.push(
+      context, 
+      MaterialPageRoute(settings: RouteSettings(), 
+        builder: (context) => ChatMain(chats: widget.chats, auth: widget.auth,))
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController (
@@ -123,11 +133,10 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin,
                 title: Text('My account', style: TextStyle(fontSize: 18.0)),
                 onTap:  _navigateToProfile,
               ),
-              // TODO: Add chat link
-              // ListTile(
-              //   title: Text('Chats'),
-              //   onTap: null,
-              // ),
+              ListTile(
+                title: Text('Chats', style: TextStyle(fontSize: 18.0)),
+                onTap: _navigateToChatMain,
+              ),
               ListTile(
                 title: Text('Log out', style: TextStyle(fontSize: 18.0)),
                 onTap: _signOut,

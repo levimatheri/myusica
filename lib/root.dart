@@ -23,6 +23,7 @@ class _RootPageState extends State<RootPage> {
   String _userId = "";
   String _username = "";
   bool _isMyuser = false;
+  List<Map<String, dynamic>> _chats = List<Map<String, dynamic>>();
   @override
   void initState() {
     super.initState();
@@ -49,10 +50,25 @@ class _RootPageState extends State<RootPage> {
         widget.auth.isMyuser(_userId).then((val) {
           setState(() {
             if (val != null) {
-              print(_isMyuser);
+              // print(_isMyuser);
               _isMyuser = val;
             } 
           });
+        });
+        widget.auth.getUser(_userId).then((val) {
+            if (val != null) {
+              setState(() {
+                val['chatIds'].forEach((item) {
+                  print(item);
+                  Map<String, dynamic> map = Map<String, dynamic>.from(item);
+                  _chats.add(map);
+                });
+                // List<dynamic>.from(val['chatIds']).forEach((item) {
+                //   _chats.add(Map<String, dynamic>.from(item));
+                // });
+                // _chats = List<Map<String, String>>.from(val['chatIds']);
+              });
+            }
         });
       }
     });
@@ -122,6 +138,7 @@ class _RootPageState extends State<RootPage> {
             username: _username,
             auth: widget.auth,
             isMyuser: _isMyuser,
+            chats: _chats,
             // onSignedOut:  _onSignedOut,
           );
         } else return _buildWaitingScreen();

@@ -27,7 +27,7 @@ class MyAccountState extends State<MyAccount> {
       });
       if (result) {
         // if this user is a Myuser, get the myuser object and their profile picture
-        widget.auth.getMyuser(widget.userId).then((result) {
+        widget.auth.getUser(widget.userId).then((result) {
           if (result != null) {
             setState(() {
                 thisMyuser = Myuser.fromMap(result, widget.userId);
