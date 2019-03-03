@@ -96,7 +96,7 @@ class ChatMainState extends State<ChatMain> {
     Navigator.push(
       context, 
       MaterialPageRoute(settings: RouteSettings(), 
-        builder: (context) => Chat(peerAvatar: pa, peerId: pid, id: id, seen: seen, itemNo: listItemNo, chatObj: widget.chats)
+        builder: (context) => Chat(auth: widget.auth, peerAvatar: pa, peerId: pid, id: id, seen: seen, itemNo: listItemNo, chatObj: widget.chats)
       )
     );
   }

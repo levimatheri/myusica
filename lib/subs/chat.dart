@@ -219,7 +219,7 @@ void onSendMessage(String content, int type) {
     }
   }
 
-  _updateThisUser() {
+  _updateThisUser() async {
     var myUserThisRef = Firestore.instance
           .collection('users')
           .document(id);
@@ -236,7 +236,10 @@ void onSendMessage(String content, int type) {
           isPresent = true;
         }
       });
-      if (isPresent) return;
+      if (isPresent) {
+        await _updatePeerUser();
+        return;
+      }
       setState(() {
         chatObj.add(myMap);
         print(chatObj);
@@ -266,13 +269,29 @@ void onSendMessage(String content, int type) {
     Map<String, dynamic> myMap = {'id': groupChatId, 'peerId': id, 'seen': false };
 
     Map<String, dynamic> newChatObj = new Map<String, dynamic>();
+
     
     List<dynamic> l = await auth.getChats(peerId);
     if (l != null && l.length > 0) {
       bool isPresent = false;
-      l.forEach((map) {
-        if (map['peerId'] == id) isPresent = true;
-      });
+      bool needsChangeSeen = false;
+
+      for (int i = 0; i < l.length; i++) {
+        if (l[i]['peerId'] == id) {
+          print("here");
+          isPresent = true;
+          if (l[i]['seen']) {
+            needsChangeSeen = true;
+            l[i]['seen'] = false;
+          }
+        }
+      }
+
+      if (isPresent) {
+        if (needsChangeSeen) {
+          newChatObj = {'chatIds': l};
+        } else return;
+      }
       if (!isPresent) {
         List<dynamic> toAdd = List<dynamic>.from(l);
         toAdd.add(myMap);
