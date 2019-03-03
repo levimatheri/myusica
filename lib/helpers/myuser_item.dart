@@ -12,10 +12,12 @@ class MyuserItem extends StatefulWidget {
   final Myuser myuser;
   final BaseAuth auth;
   final String id;
+  final List<Map<String, dynamic>> chats;
   MyuserItem({
     @required this.myuser,
     this.auth,
-    this.id
+    this.id,
+    this.chats
   });
   
   MyuserItemState createState() => MyuserItemState();
@@ -58,7 +60,7 @@ class MyuserItemState extends State<MyuserItem> {
         Navigator.push(
           context, 
           MaterialPageRoute(settings: RouteSettings(),
-            builder: (context) => MyuserProfile(id: widget.id, myuser: widget.myuser, imageUrl: ppString, isFromMyAccount: false,)));}
+            builder: (context) => MyuserProfile(auth: widget.auth, id: widget.id, myuser: widget.myuser, chats: widget.chats, imageUrl: ppString, isFromMyAccount: false,)));}
     );
   }
 }

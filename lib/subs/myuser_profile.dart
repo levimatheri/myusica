@@ -11,7 +11,8 @@ class MyuserProfile extends StatefulWidget {
   final bool isFromMyAccount; // boolean showing if user has come to this page from MyAccount page 
   final BaseAuth auth;
   final String id;
-  MyuserProfile({this.myuser, this.imageUrl, this.isFromMyAccount, this.auth, this.id});
+  final List<Map<String, dynamic>> chats;
+  MyuserProfile({this.myuser, this.imageUrl, this.isFromMyAccount, this.auth, this.id, this.chats});
 
   @override
   MyuserProfileState createState() => new MyuserProfileState();  
@@ -47,7 +48,7 @@ class MyuserProfileState extends State<MyuserProfile> {
     Navigator.push(
       context, 
       MaterialPageRoute(settings: RouteSettings(), 
-        builder: (context) => Chat(peerAvatar: ppString, peerId: widget.myuser.id, id: widget.id)
+        builder: (context) => Chat(peerAvatar: ppString, peerId: widget.myuser.id, id: widget.id, chatObj: widget.chats, auth: widget.auth,)
       )
     );
   }

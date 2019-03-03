@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:myusica/helpers/auth.dart';
 import 'package:myusica/login.dart';
 import 'package:myusica/home.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class RootPage extends StatefulWidget {
   final BaseAuth auth;
@@ -28,73 +29,60 @@ class _RootPageState extends State<RootPage> {
   void initState() {
     super.initState();
     // determine logged in status
-    widget.auth.getCurrentUser().then((user) {
-      setState(() {
-        if (user != null) 
-        {
-          _userId = user?.uid;
-        }
-        // if user id is null, set status to not logged in otherwise set it to logged in
-        authStatus = 
+    // initialize stuff 
+    _initPlatform();   
+  }
+
+  _initPlatform() async {
+    FirebaseUser user = await widget.auth.getCurrentUser();
+    setState(() {
+      if (user != null) 
+      {
+        _userId = user?.uid;
+      }     
+      authStatus = 
           user?.uid == null ? AuthStatus.NOT_LOGGED_IN : AuthStatus.LOGGED_IN;
-      });
-      
-      if (_userId != null && _userId.isNotEmpty) {
-        widget.auth.getUsername(_userId).then((username) {
-          setState(() {
-            if (username != null) {
-              _username = username;
-            } 
-          });
-        });
-        widget.auth.isMyuser(_userId).then((val) {
-          setState(() {
-            if (val != null) {
-              // print(_isMyuser);
-              _isMyuser = val;
-            } 
-          });
-        });
-        widget.auth.getUser(_userId).then((val) {
-            if (val != null) {
-              setState(() {
-                val['chatIds'].forEach((item) {
-                  print(item);
-                  Map<String, dynamic> map = Map<String, dynamic>.from(item);
-                  _chats.add(map);
-                });
-                // List<dynamic>.from(val['chatIds']).forEach((item) {
-                //   _chats.add(Map<String, dynamic>.from(item));
-                // });
-                // _chats = List<Map<String, String>>.from(val['chatIds']);
-              });
-            }
+    });
+    
+    if (_userId != null && _userId != "") {
+      initStuff();
+    }
+  }
+
+  void initStuff() async {
+    String username = await widget.auth.getUsername(_userId);   
+    setState(() {
+      if (username != null) {
+        _username = username;
+      } 
+    });
+
+    bool isMyuser = await widget.auth.isMyuser(_userId);
+    setState(() {
+      if (isMyuser != null) {
+        _isMyuser = isMyuser;
+      } 
+    });
+
+    List<dynamic> chats = await widget.auth.getChats(_userId);
+    setState(() {
+      if (chats != null) {
+        chats.forEach((item) {
+          Map<String, dynamic> map = Map<String, dynamic>.from(item);
+          _chats.add(map);
         });
       }
     });
   }
 
-  // after logging in get current user id and name
+  // after logging in get current user id and name and chats
   void _onLoggedIn() {
-    widget.auth.getCurrentUser().then((user) {
-      setState(() {
-        if (user != null) 
-        {
-          _userId = user?.uid;
-          widget.auth.getUsername(_userId).then((username) {
-            if (username != null) {
-              _username = username;
-            } 
-          });
-          widget.auth.isMyuser(_userId).then((val) {
-            setState(() {
-              if (val != null) {
-                _isMyuser = val;
-              } 
-            });
-          });
-        }
-      });
+    widget.auth.getCurrentUser().then((user) async {
+      if (user != null) 
+      {
+        _userId = user?.uid;
+        initStuff();
+      }
     });
     
     setState(() {

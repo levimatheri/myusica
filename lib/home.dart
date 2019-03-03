@@ -57,6 +57,10 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin,
   }
 
   _signOut() async {
+    setState(() {
+      access = null;
+    });
+   
     try {
       await widget.auth.signOut();
       // widget.onSignedOut();
@@ -94,7 +98,7 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin,
     Navigator.push(
       context, 
       MaterialPageRoute(settings: RouteSettings(), 
-        builder: (context) => ChatMain(chats: widget.chats, auth: widget.auth,))
+        builder: (context) => ChatMain(chats: widget.chats, auth: widget.auth, id: widget.userId))
     );
   }
 
@@ -154,7 +158,7 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin,
           controller: _tabController,
             children: [
               Container(
-                child: Results(access: access, id: widget.userId)
+                child: Results(access: access, id: widget.userId, auth: widget.auth,)
               ),
               Container (
                 margin: EdgeInsets.only(top: 30.0, left: 20.0, right: 20.0),
@@ -174,7 +178,8 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin,
 class Results extends StatefulWidget {
   final Access access;
   final String id;
-  Results({this.access, this.id});
+  final BaseAuth auth;
+  Results({this.access, this.id, this.auth});
   ResultsState createState() => new ResultsState();
 }
 
@@ -239,7 +244,8 @@ class ResultsState extends State<Results> {
     _myuserList = docs.map((document) {
       return MyuserItem(
         myuser: Myuser.fromMap(document.data, document.documentID),
-        id: widget.id
+        id: widget.id,
+        auth: widget.auth,
       ); 
     }).toList();
 
@@ -251,7 +257,7 @@ class ResultsState extends State<Results> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      child: widget.access.query != null ? StreamBuilder(
+      child: widget.access != null && widget.access.query != null ? StreamBuilder(
         stream: widget.access.query.snapshots(),
         builder: (BuildContext context, 
             AsyncSnapshot<QuerySnapshot> snapshot) {
@@ -578,6 +584,7 @@ AutomaticKeepAliveClientMixin<Criteria> {
   }
 
   void _buildQuery() {
+    if (widget.access == null) return;
     widget.access.query = Firestore.instance.collection("users").where("type", isEqualTo: "myuser");
     finalCriteria.forEach((k, v) {
       if (v != null) {

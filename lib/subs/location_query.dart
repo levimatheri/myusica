@@ -30,7 +30,13 @@ AutomaticKeepAliveClientMixin<LocationQuery> {
   Future<DocumentSnapshot> _fetchMouse() async {
     // DataSnapshot snapshot = await databaseReference.child("google_api").once();
     // return snapshot.value;
-    return await db.collection('api_keys').document('diYQMfrSCICXrT660Hzc').get();
+    try {
+      return await db.collection('api_keys').document('diYQMfrSCICXrT660Hzc').get();
+    } catch (e) {
+      showAlertDialog(context, ["Okay"], "Error", "Error occurred $e");
+      return null;
+    }
+    
   }
 
   /// Get location options from Google Maps API
@@ -48,7 +54,7 @@ AutomaticKeepAliveClientMixin<LocationQuery> {
     
     DocumentSnapshot mouseSnapshot = await _fetchMouse();
     final places = new GoogleMapsPlaces(apiKey: mouseSnapshot['google_maps']);
-
+    
     PlacesSearchResponse response =
       await places.searchByText(searchQuery);
 

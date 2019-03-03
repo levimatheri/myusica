@@ -10,12 +10,17 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:myusica/helpers/auth.dart';
 
 class Chat extends StatelessWidget {
   final String peerId;
   final String peerAvatar;
   final String id;
-  Chat({Key key, @required this.peerId, @required this.peerAvatar, @required this.id}) : super(key: key);
+  final bool seen;
+  final int itemNo;
+  final List<Map<String, dynamic>> chatObj;
+  final BaseAuth auth;
+  Chat({Key key, @required this.peerId, @required this.peerAvatar, @required this.id, this.seen, this.itemNo, this.chatObj, this.auth}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +35,11 @@ class Chat extends StatelessWidget {
       body: new ChatScreen(
         peerId: peerId,
         peerAvatar: peerAvatar,
-        id: id
+        id: id,
+        seen: seen,
+        itemNo: itemNo,
+        chatObj: chatObj,
+        auth: auth,
       ),
     );
   }
@@ -40,18 +49,26 @@ class ChatScreen extends StatefulWidget {
   final String peerId;
   final String peerAvatar;
   final String id;
-  ChatScreen({Key key, @required this.peerId, @required this.peerAvatar, @required this.id}) : super(key: key);
+  final bool seen;
+  final int itemNo;
+  final List<Map<String, dynamic>> chatObj;
+  final BaseAuth auth;
+  ChatScreen({Key key, @required this.peerId, @required this.peerAvatar, @required this.id, this.seen, this.itemNo, this.chatObj, this.auth}) : super(key: key);
 
     @override
-  State createState() => new ChatScreenState(peerId: peerId, peerAvatar: peerAvatar, id: id);
+  State createState() => new ChatScreenState(peerId: peerId, peerAvatar: peerAvatar, id: id, seen: seen, itemNo: itemNo, chatObj: chatObj, auth: auth);
 }
 
 class ChatScreenState extends State<ChatScreen> {
-  ChatScreenState({Key key, @required this.peerId, @required this.peerAvatar, @required this.id});
+  ChatScreenState({Key key, @required this.peerId, @required this.peerAvatar, @required this.id, this.seen, this.itemNo, this.chatObj, this.auth});
 
   String peerId;
   String peerAvatar;
   String id;
+  bool seen;
+  int itemNo;
+  List<Map<String, dynamic>> chatObj;
+  BaseAuth auth;
 
   var listMessage;
   String groupChatId;
@@ -69,6 +86,9 @@ class ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    // print(widget.peerAvatar);
+    // print(widget.peerId);
+    // print(widget.id);
     focusNode.addListener(onFocusChange);
 
     groupChatId = '';
@@ -78,7 +98,26 @@ class ChatScreenState extends State<ChatScreen> {
     imageUrl = '';
 
     id = widget.id;
+
+    if (seen != null) _updateSeen();
     readLocal();
+  }
+
+  void _updateSeen() {
+    if (!seen) {
+      // update firebase with this new chat obj
+      chatObj[itemNo]['seen'] = true;
+      var userRef = Firestore.instance
+          .collection('users')
+          .document(id);
+      
+      Map<String, dynamic> toUpdate = {'chatIds': chatObj};
+
+      Firestore.instance.runTransaction((transaction) async {
+        await transaction.update(userRef, toUpdate);
+        print("Message changed to seen");
+      });
+    }
   }
 
   void onFocusChange() {
@@ -152,6 +191,7 @@ void onSendMessage(String content, int type) {
           .collection(groupChatId)
           .document(DateTime.now().millisecondsSinceEpoch.toString());
 
+      
       Firestore.instance.runTransaction((transaction) async {
         await transaction.set(
           documentReference,
@@ -163,14 +203,64 @@ void onSendMessage(String content, int type) {
             'type': type
           },
         );
+      }).then((_) {
+        if (chatObj == null) {
+          _updateThisUser();
+        }
       });
+      
+      
       listScrollController.animateTo(0.0, duration: Duration(milliseconds: 300), curve: Curves.easeOut);
     } else {
       Fluttertoast.showToast(msg: 'Nothing to send');
     }
   }
 
+  _updateThisUser() {
+    var myUserThisRef = Firestore.instance
+          .collection('users')
+          .document(id);
+   
+    List<Map<String, dynamic>> newChatList = new List<Map<String, dynamic>>();
+    Map<String, dynamic> myMap = {'id': groupChatId, 'peerId': peerId, 'seen': true };
+    newChatList.add(myMap);
+
+    Map<String, dynamic> newChatObj = {'chatIds':newChatList};
+
+    Firestore.instance.runTransaction((transaction) async {
+      await transaction.update(myUserThisRef, newChatObj);
+    }).then((_) {
+      _updatePeerUser();
+    });
+  }
+
+  _updatePeerUser() async {
+    var myUserPeerRef = Firestore.instance
+          .collection('users')
+          .document(peerId);
+
+    List<Map<String, dynamic>> newChatList = new List<Map<String, dynamic>>();
+    Map<String, dynamic> myMap = {'id': groupChatId, 'peerId': id, 'seen': false };
+
+    Map<String, dynamic> newChatObj = new Map<String, dynamic>();
+    
+    // check if this user has chatIds
+    List<dynamic> l = await auth.getChats(peerId);
+    if (l != null && l.length > 0) {
+      l.add(myMap);
+      newChatObj = {'chatIds': l};
+    } else {
+      newChatList.add(myMap);
+      newChatObj = {'chatIds':newChatList};
+    }
+    
+    Firestore.instance.runTransaction((transaction) async {
+      await transaction.update(myUserPeerRef, newChatObj);
+    });
+  }
+
   Widget buildItem(int index, DocumentSnapshot document) {
+    String placeholderUrl = "https://firebasestorage.googleapis.com/v0/b/myusica-4818e.appspot.com/o/chat_pictures%2Fuser-placeholder.png?alt=media&token=1041a9fe-8849-4fc3-b1a9-fb156f9dc1de";
     if (document['idFrom'] == id) {
       // Right (my message)
       return Row(
@@ -260,7 +350,7 @@ void onSendMessage(String content, int type) {
                             height: 35.0,
                             padding: EdgeInsets.all(10.0),
                           ),
-                          imageUrl: peerAvatar,
+                          imageUrl: peerAvatar != null ? (peerAvatar.length == 1 ? placeholderUrl : peerAvatar) : placeholderUrl,
                           width: 35.0,
                           height: 35.0,
                           fit: BoxFit.cover,
