@@ -37,7 +37,7 @@ class ChatMainState extends State<ChatMain> {
 
     // print(widget.chats.length);
 
-    _initChatList();
+    if (widget.chats.length > 0) _initChatList();
   }
 
   // grab all chat ids
@@ -104,7 +104,7 @@ class ChatMainState extends State<ChatMain> {
   _buildChatList() {
     return Container(
       margin: EdgeInsets.only(top: 30.0, left: 5.0, right: 5.0),
-      child: ListView.builder(
+      child: widget.chats.length > 0 ? ListView.builder(
         itemBuilder: (context, index) {
           return ListTile(
             // if url given has length 1, the url doesn't exist
@@ -125,7 +125,7 @@ class ChatMainState extends State<ChatMain> {
           );
         },
         itemCount: widget.chats.length,
-      ),
+      ) : Center(child: Text("No chats found"),),
     );  
   }
 }

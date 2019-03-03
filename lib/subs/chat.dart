@@ -99,11 +99,14 @@ class ChatScreenState extends State<ChatScreen> {
 
     id = widget.id;
 
+    print("chat is null " + (widget.chatObj == null).toString());
+
     if (seen != null) _updateSeen();
     readLocal();
   }
 
   void _updateSeen() {
+    // print(seen == null);
     if (!seen) {
       // update firebase with this new chat obj
       chatObj[itemNo]['seen'] = true;
@@ -116,6 +119,8 @@ class ChatScreenState extends State<ChatScreen> {
       Firestore.instance.runTransaction((transaction) async {
         await transaction.update(userRef, toUpdate);
         print("Message changed to seen");
+      }).then((_) {
+        seen = true;
       });
     }
   }
@@ -204,9 +209,7 @@ void onSendMessage(String content, int type) {
           },
         );
       }).then((_) {
-        if (chatObj == null) {
-          _updateThisUser();
-        }
+        _updateThisUser();
       });
       
       
@@ -223,9 +226,29 @@ void onSendMessage(String content, int type) {
    
     List<Map<String, dynamic>> newChatList = new List<Map<String, dynamic>>();
     Map<String, dynamic> myMap = {'id': groupChatId, 'peerId': peerId, 'seen': true };
-    newChatList.add(myMap);
 
-    Map<String, dynamic> newChatObj = {'chatIds':newChatList};
+    Map<String, dynamic> newChatObj = new Map<String, dynamic>();
+
+    if (chatObj != null && chatObj.length > 0) {
+      bool isPresent = false;
+      chatObj.forEach((map) {
+        if (map['peerId'] == peerId) { 
+          isPresent = true;
+        }
+      });
+      if (isPresent) return;
+      setState(() {
+        chatObj.add(myMap);
+        print(chatObj);
+      });
+      newChatObj = {'chatIds': chatObj};
+    } else {     
+      newChatList.add(myMap);
+      setState(() {
+        chatObj = newChatList;
+      });
+      newChatObj = {'chatIds':newChatList};
+    }
 
     Firestore.instance.runTransaction((transaction) async {
       await transaction.update(myUserThisRef, newChatObj);
@@ -244,12 +267,18 @@ void onSendMessage(String content, int type) {
 
     Map<String, dynamic> newChatObj = new Map<String, dynamic>();
     
-    // check if this user has chatIds
     List<dynamic> l = await auth.getChats(peerId);
     if (l != null && l.length > 0) {
-      l.add(myMap);
-      newChatObj = {'chatIds': l};
-    } else {
+      bool isPresent = false;
+      l.forEach((map) {
+        if (map['peerId'] == id) isPresent = true;
+      });
+      if (!isPresent) {
+        List<dynamic> toAdd = List<dynamic>.from(l);
+        toAdd.add(myMap);
+        newChatObj = {'chatIds': toAdd};
+      }
+    } else {     
       newChatList.add(myMap);
       newChatObj = {'chatIds':newChatList};
     }
@@ -333,6 +362,7 @@ void onSendMessage(String content, int type) {
       );
     } else {
       // Left (peer message)
+      if (seen != null && seen == false) _updateSeen();
       return Container(
         child: Column(
           children: <Widget>[

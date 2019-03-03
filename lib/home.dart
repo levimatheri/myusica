@@ -158,7 +158,7 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin,
           controller: _tabController,
             children: [
               Container(
-                child: Results(access: access, id: widget.userId, auth: widget.auth,)
+                child: Results(access: access, id: widget.userId, auth: widget.auth, chats: widget.chats)
               ),
               Container (
                 margin: EdgeInsets.only(top: 30.0, left: 20.0, right: 20.0),
@@ -179,7 +179,8 @@ class Results extends StatefulWidget {
   final Access access;
   final String id;
   final BaseAuth auth;
-  Results({this.access, this.id, this.auth});
+  final List<Map<String, dynamic>> chats;
+  Results({this.access, this.id, this.auth, this.chats});
   ResultsState createState() => new ResultsState();
 }
 
@@ -246,6 +247,7 @@ class ResultsState extends State<Results> {
         myuser: Myuser.fromMap(document.data, document.documentID),
         id: widget.id,
         auth: widget.auth,
+        chats: widget.chats,
       ); 
     }).toList();
 
