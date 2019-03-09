@@ -112,7 +112,9 @@ class LoginPageState extends State<LoginPage> {
           if (_isIos) _errorMessage = e.details;
           else _errorMessage = e.message;
         });
-        showAlertDialog(context, ["Okay"], "Error", "Email or password incorrect");
+        if (_formMode == FormMode.LOGIN)
+          showAlertDialog(context, ["Okay"], "Error", _errorMessage);
+        else showAlertDialog(context, ["Okay"], "Error", _errorMessage);
       }
     }
   }
@@ -127,17 +129,21 @@ class LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     _isIos = Theme.of(context).platform == TargetPlatform.iOS;
-    return new Scaffold(
-      appBar: new AppBar(
-        title: new Text("Log in"),
-        automaticallyImplyLeading: false, // removes back button so that user can only use log out
-      ),
-      body: Stack(
-        children: <Widget>[
-          _showBody(),
-          _showCircularProgress(),
-        ],
-      ),
+    // prevent user from going back to home after they log out using WillPopScope
+    return WillPopScope(
+      onWillPop: () async => false,
+      child: new Scaffold(
+        appBar: new AppBar(
+          title: new Text("Log in"),
+          automaticallyImplyLeading: false, // removes back button so that user can only use log out
+        ),
+        body: Stack(
+          children: <Widget>[
+            _showBody(),
+            _showCircularProgress(),
+          ],
+        ),
+      )
     );
   }
 
@@ -150,11 +156,11 @@ class LoginPageState extends State<LoginPage> {
     return new Hero(
       tag: 'hero',
       child: Padding(
-        padding: _formMode == FormMode.LOGIN ? EdgeInsets.fromLTRB(0.0, 15.0, 0.0, 0.0) 
-                                : EdgeInsets.fromLTRB(0.0, 0.0, 0.0, 0.0),
+        padding: EdgeInsets.fromLTRB(0.0, 5.0, 0.0, 0.0),
+                                // : EdgeInsets.fromLTRB(0.0, 0.0, 0.0, 0.0),
         child: CircleAvatar(
           backgroundColor: Colors.transparent,
-          radius: 70.0,
+          radius: 50.0,
           child: Image.asset('images/Myusica logo.png'),
         ),
       ),
@@ -162,8 +168,8 @@ class LoginPageState extends State<LoginPage> {
   }
 
   Widget _showUsernameInput() {
-    return _formMode == FormMode.SIGNUP ? Padding(
-      padding: const EdgeInsets.fromLTRB(0.0, 0.0, 0.0, 0.0),
+    return _formMode == FormMode.SIGNUP ?  Padding(
+      padding: EdgeInsets.fromLTRB(0.0, 5.0, 0.0, 10.0),
       child: new TextFormField(
         maxLines: 1,
         keyboardType: TextInputType.emailAddress,
@@ -178,13 +184,13 @@ class LoginPageState extends State<LoginPage> {
         validator: (value) => value.isEmpty ? 'Username cannot be empty' : null,
         onSaved: (value) => _username = value,
       ),
-    ) : Container();
+    ) : Container(height: 0.0, width: 0.0); 
   }
 
   Widget _showEmailInput() {
     return Padding(
       padding: _formMode == FormMode.LOGIN ? EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 20.0) 
-                                    : EdgeInsets.fromLTRB(0.0, 5.0, 0.0, 5.0),
+                                    : EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 10.0),
       child: new TextFormField(
         maxLines: 1,
         keyboardType: TextInputType.emailAddress,
@@ -205,7 +211,7 @@ class LoginPageState extends State<LoginPage> {
   Widget _showPasswordInput() {
     return Padding(
       padding: _formMode == FormMode.LOGIN ? EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 20.0) 
-                                  : EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 5.0),
+                                  : EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 10.0),
       child: new TextFormField(
         controller: _passwordTextController,
         maxLines: 1,
@@ -226,7 +232,7 @@ class LoginPageState extends State<LoginPage> {
 
   Widget _showConfirmPasswordInput() {
     return _formMode == FormMode.SIGNUP ? Padding(
-      padding: const EdgeInsets.fromLTRB(0.0, 5.0, 0.0, 0.0),
+      padding: const EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 0.0),
       child: new TextFormField(
         controller: _confirmPasswordTextController,
         maxLines: 1,
@@ -378,7 +384,7 @@ class LoginPageState extends State<LoginPage> {
             _showConfirmPasswordInput(),
             _showPrimaryButton(),
             _showSecondaryButton(),
-            _formMode == FormMode.LOGIN ? _showForgotPassword() : null,
+            _formMode == FormMode.LOGIN ? _showForgotPassword() : Container(height: 0.0, width: 0.0,),
             //_showErrorMessage(),
           ],
         ),

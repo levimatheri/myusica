@@ -101,7 +101,7 @@ class ResultsState extends State<Results> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Myusers"), backgroundColor: Colors.orange,),
+      appBar: AppBar(title: Text("Myusers (musicians)"), backgroundColor: Colors.orange,),
       body: Container(
         margin: EdgeInsets.only(top: 20.0),
         child: widget.access != null && widget.access.query != null ? StreamBuilder(

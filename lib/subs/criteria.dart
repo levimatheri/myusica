@@ -7,6 +7,7 @@ import 'package:myusica/home.dart';
 
 import 'package:myusica/helpers/specializations.dart';
 import 'package:myusica/helpers/access.dart';
+import 'package:myusica/helpers/auth.dart';
 import 'package:myusica/subs/location_query.dart';
 import 'package:myusica/subs/autocomplete_query.dart';
 import 'package:myusica/subs/availability_query.dart';
@@ -19,7 +20,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// =============SEARCH CRITERIA=====================
 class Criteria extends StatefulWidget {
   final Access access;
-  Criteria({this.access});
+  final BaseAuth auth;
+  Criteria({this.access, this.auth});
 
   static const routeName = "/criteria";
   CriteriaState createState() => new CriteriaState();
@@ -342,7 +344,7 @@ AutomaticKeepAliveClientMixin<Criteria> {
     Navigator.push(
       context, 
       MaterialPageRoute(settings: RouteSettings(),
-                        builder: (context) => Results(access: widget.access,))
+                        builder: (context) => Results(auth: widget.auth, access: widget.access,))
     );
   }
 
