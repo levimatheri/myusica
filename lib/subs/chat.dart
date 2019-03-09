@@ -18,7 +18,7 @@ class Chat extends StatelessWidget {
   final String id;
   final bool seen;
   final int itemNo;
-  final List<Map<String, dynamic>> chatObj;
+  List<Map<String, dynamic>> chatObj;
   final BaseAuth auth;
   Chat({Key key, @required this.peerId, @required this.peerAvatar, @required this.id, this.seen, this.itemNo, this.chatObj, this.auth}) : super(key: key);
 
@@ -26,6 +26,10 @@ class Chat extends StatelessWidget {
   Widget build(BuildContext context) {
     return new Scaffold(
       appBar: new AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context, itemNo),
+        ),
         title: new Text(
           'CHAT',
           style: TextStyle(fontWeight: FontWeight.bold),
@@ -99,7 +103,7 @@ class ChatScreenState extends State<ChatScreen> {
 
     id = widget.id;
 
-    print("chat is null " + (widget.chatObj == null).toString());
+    // print("chat is null " + (widget.chatObj == null).toString());
 
     if (seen != null) _updateSeen();
     readLocal();
@@ -118,7 +122,7 @@ class ChatScreenState extends State<ChatScreen> {
 
       Firestore.instance.runTransaction((transaction) async {
         await transaction.update(userRef, toUpdate);
-        print("Message changed to seen");
+        // print("Message changed to seen");
       }).then((_) {
         seen = true;
       });

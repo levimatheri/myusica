@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:myusica/helpers/dialogs.dart';
 
 abstract class BaseAuth {
   Future<String> signIn(String email, String password);
 
   Future<String> signUp(String username, String email, String password);
+
+  Future<void> addNewCustomUser(String username, String userId);
 
   Future<FirebaseUser> getCurrentUser();
 
@@ -18,6 +21,8 @@ abstract class BaseAuth {
   Future<bool> isMyuser(String userId);
 
   Future<Map<String, dynamic>> getUser(String userId);
+
+  Future<void> resetPassword(String email);
 }
 
 class Auth implements BaseAuth {
@@ -29,19 +34,39 @@ class Auth implements BaseAuth {
     FirebaseUser user = await _firebaseAuth.createUserWithEmailAndPassword(
       email: email, password: password
     );
-    // Also add user to our custom database
+
+    try {
+      await user.sendEmailVerification();
+      
+      return user.uid;
+    } catch (e) {
+      print("An error occured while trying to send email verification");
+      user.delete(); // delete user from authentication database
+      return "Email verification could not be sent";
+    }
+  }
+
+  @override
+  Future<void> resetPassword(String email) async {
+    await _firebaseAuth.sendPasswordResetEmail(email: email);
+  }
+
+
+  @override
+  Future<void> addNewCustomUser(String username, String userId) async {
     await _firestoreRecord
       .collection('users')
-      .document(user.uid).setData({"username": username, "type": "guest"});
-    return user.uid;
+      .document(userId).setData({"username": username, "type": "guest"});
   }
+
 
   @override
   Future<String> signIn(String email, String password) async {
     FirebaseUser user = await _firebaseAuth.signInWithEmailAndPassword(
       email: email, password: password
     );
-    return user.uid;
+    if (user.isEmailVerified) return user.uid;
+    else return "Email not verified";
   }
 
   @override
@@ -53,6 +78,7 @@ class Auth implements BaseAuth {
   @override
   Future<String> getUsername(String userId) async {
     DocumentSnapshot snapshot = await _firestoreRecord.collection("users").document(userId).get();
+    if (snapshot.data == null) return null;
     return snapshot.data['username'];
   }
 

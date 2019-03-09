@@ -98,7 +98,14 @@ class ChatMainState extends State<ChatMain> {
       MaterialPageRoute(settings: RouteSettings(), 
         builder: (context) => Chat(auth: widget.auth, peerAvatar: pa, peerId: pid, id: id, seen: seen, itemNo: listItemNo, chatObj: widget.chats)
       )
-    );
+    ).then((result) {
+      if (result != null) {
+        // set seen at this index to true
+        setState(() {
+         messageSeen[result] = true; 
+        });
+      }
+    });
   }
 
   _buildChatList() {

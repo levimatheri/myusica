@@ -28,6 +28,7 @@ class LoginPageState extends State<LoginPage> {
   String _password;
   String _errorMessage;
 
+  TextEditingController _emailTextController = TextEditingController();
   TextEditingController _passwordTextController = TextEditingController();
   TextEditingController _confirmPasswordTextController = TextEditingController();
 
@@ -55,6 +56,20 @@ class LoginPageState extends State<LoginPage> {
       try {
         if (_formMode == FormMode.LOGIN) {
           userId = await widget.auth.signIn(_email, _password);
+          if (userId == 'Email not verified') {
+            setState(() {
+             _isLoading = false; 
+            });
+            showAlertDialog(context, ["Okay"], "Email not verified", "Check your email to verify");
+            return;
+          }
+
+          // check to see if this user is in our database. If not this is a new user, add them
+          String possibleUserName = await widget.auth.getUsername(userId);
+          if (possibleUserName == null) {
+            await widget.auth.addNewCustomUser(_username, userId);
+          }
+
           print('Signed in user: $userId');
         } else {
           if (_confirmPasswordTextController.text !=_passwordTextController.text) {
@@ -65,7 +80,24 @@ class LoginPageState extends State<LoginPage> {
             return;
           }
           userId = await widget.auth.signUp(_username, _email, _password);
-          print('Signed up user: $userId');
+          if (userId == 'Email verification could not be sent') {
+            setState(() {
+             _isLoading = false; 
+            });
+            showAlertDialog(context, ["Okay"], "ERROR", "Email verification could not be sent." + 
+                                                        "Make sure email is valid");
+            return;
+          }
+          // redirect to Login
+          else { 
+            print('Signed up user: $userId');
+            showAlertDialog(context, ["Okay"], "Success!", "You have been signed in successfully. Check your email to verify");
+            setState(() {
+              _isLoading = false;        
+            });
+            _changeFormToLogin(); 
+            return;
+          }
         }
 
         setState(() {
@@ -119,7 +151,7 @@ class LoginPageState extends State<LoginPage> {
       tag: 'hero',
       child: Padding(
         padding: _formMode == FormMode.LOGIN ? EdgeInsets.fromLTRB(0.0, 15.0, 0.0, 0.0) 
-                                : EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 0.0),
+                                : EdgeInsets.fromLTRB(0.0, 0.0, 0.0, 0.0),
         child: CircleAvatar(
           backgroundColor: Colors.transparent,
           radius: 70.0,
@@ -131,7 +163,7 @@ class LoginPageState extends State<LoginPage> {
 
   Widget _showUsernameInput() {
     return _formMode == FormMode.SIGNUP ? Padding(
-      padding: const EdgeInsets.fromLTRB(0.0, 2.0, 0.0, 10.0),
+      padding: const EdgeInsets.fromLTRB(0.0, 0.0, 0.0, 0.0),
       child: new TextFormField(
         maxLines: 1,
         keyboardType: TextInputType.emailAddress,
@@ -152,7 +184,7 @@ class LoginPageState extends State<LoginPage> {
   Widget _showEmailInput() {
     return Padding(
       padding: _formMode == FormMode.LOGIN ? EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 20.0) 
-                                    : EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 10.0),
+                                    : EdgeInsets.fromLTRB(0.0, 5.0, 0.0, 5.0),
       child: new TextFormField(
         maxLines: 1,
         keyboardType: TextInputType.emailAddress,
@@ -173,7 +205,7 @@ class LoginPageState extends State<LoginPage> {
   Widget _showPasswordInput() {
     return Padding(
       padding: _formMode == FormMode.LOGIN ? EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 20.0) 
-                                  : EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 10.0),
+                                  : EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 5.0),
       child: new TextFormField(
         controller: _passwordTextController,
         maxLines: 1,
@@ -194,7 +226,7 @@ class LoginPageState extends State<LoginPage> {
 
   Widget _showConfirmPasswordInput() {
     return _formMode == FormMode.SIGNUP ? Padding(
-      padding: const EdgeInsets.fromLTRB(0.0, 15.0, 0.0, 0.0),
+      padding: const EdgeInsets.fromLTRB(0.0, 5.0, 0.0, 0.0),
       child: new TextFormField(
         controller: _confirmPasswordTextController,
         maxLines: 1,
@@ -258,11 +290,48 @@ class LoginPageState extends State<LoginPage> {
     );
   }
 
+  Widget _showForgotPassword() {
+    return new FlatButton(
+      child: Text("Forgot password?", style: TextStyle(fontSize: 16.0),),
+      onPressed: _resetPassword,
+    );
+  }
+
+  void _resetPassword() async {
+    // we need email input to know where to send reset instructions
+    if (_emailTextController.text == null) {
+      showAlertDialog(context, ["Okay"], "Error", "Input email above first, then click on \'Forgot Password?\'");
+      return;
+    }
+    String toSendEmail = _email;
+    try {
+      setState(() {
+       _isLoading = true; 
+      });
+      await widget.auth.resetPassword(toSendEmail);
+    } catch (e) {
+      setState(() {
+       _isLoading = false; 
+      });
+      showAlertDialog(context, ["Okay"], "Error" , "An error occurred while resetting password");
+      return;
+    }
+    
+    setState(() {
+      _isLoading = false; 
+    });
+    showAlertDialog(context, ["Okay"], "Info", "An email containing instructions on how to reset your password has been sent to $toSendEmail");
+  }
+
+
   void _changeFormToSignUp() {
     _formKey.currentState.reset();
     _errorMessage = "";
     print("Changing to sign up");
     setState(() {
+      _emailTextController.text = "";
+      _passwordTextController.text = "";
+      _confirmPasswordTextController.text = "";
       _formMode = FormMode.SIGNUP;
     });
   }
@@ -272,6 +341,8 @@ class LoginPageState extends State<LoginPage> {
     _errorMessage = "";
     print("Changing to login");
     setState(() {
+      _emailTextController.text = "";
+      _passwordTextController.text = "";
       _formMode = FormMode.LOGIN;
     });
   }
@@ -307,6 +378,7 @@ class LoginPageState extends State<LoginPage> {
             _showConfirmPasswordInput(),
             _showPrimaryButton(),
             _showSecondaryButton(),
+            _formMode == FormMode.LOGIN ? _showForgotPassword() : null,
             //_showErrorMessage(),
           ],
         ),
