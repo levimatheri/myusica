@@ -52,6 +52,7 @@ class MyAccountState extends State<MyAccount> {
       appBar: AppBar(
         title: Text("Profile"),
       ),
+      body: Center(child: Text("Nothing to show", style: TextStyle(fontSize: 17.0),)),
     ) : isLoading ? Center(child: CircularProgressIndicator()) 
                   : MyuserProfile(auth: widget.auth, myuser: thisMyuser, imageUrl: myuserPicUrl, isFromMyAccount: true,);
   }

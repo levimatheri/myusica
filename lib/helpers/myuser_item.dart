@@ -28,14 +28,10 @@ class MyuserItemState extends State<MyuserItem> {
   @override
   void initState() {
     super.initState();
-
-    print("chats is still null " + (widget.chats == null).toString());
     
     getProfilePicture(widget.myuser).then((value) {
-      print("myuser id " + widget.myuser.id);
       if (value != null) {
         setState(() {
-          print("image url " + value);
           ppString = value.toString();
         });
       }

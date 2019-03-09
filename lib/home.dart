@@ -221,19 +221,25 @@ class ResultsState extends State<Results> {
     /// filter through documents and remove what doesn't match availability and distance range
     List<String> toRemove = [];
     docs.forEach((d) {
-      List<String> myuserCoordinates = (d.data['coordinates']).split(",");
-      List<String> currCoordinates = ResultsState.currCoordinates.split(",");
-      // check availability
-      if(!_areAvailabilitiesSame(
-        Map<String, dynamic>.from(d.data['availability']), 
-        ResultsState.availability)) toRemove.add(d.documentID);
-      // check distance
-      if(!_isWithinDistance(
-        double.parse(myuserCoordinates[0]), 
-        double.parse(myuserCoordinates[1]), 
-        double.parse(currCoordinates[0]), 
-        double.parse(currCoordinates[1]), 
-        CriteriaState._distSliderVal)) toRemove.add(d.documentID);
+      if (d.data['coordinates'] != null && ResultsState.currCoordinates != null) {
+        List<String> myuserCoordinates = (d.data['coordinates']).split(",");
+        List<String> currCoordinates = ResultsState.currCoordinates.split(",");
+
+        // check distance
+        if(!_isWithinDistance(
+          double.parse(myuserCoordinates[0]), 
+          double.parse(myuserCoordinates[1]), 
+          double.parse(currCoordinates[0]), 
+          double.parse(currCoordinates[1]), 
+          CriteriaState._distSliderVal)) toRemove.add(d.documentID);
+      }
+      
+      if (d.data['availability'] != null && ResultsState.availability != null) {
+        // check availability
+        if(!_areAvailabilitiesSame(
+          Map<String, dynamic>.from(d.data['availability']), 
+          ResultsState.availability)) toRemove.add(d.documentID);
+        }
     });
 
     // remove what doesn't match. We feed the unwanted to an external list to prevent
@@ -259,6 +265,7 @@ class ResultsState extends State<Results> {
   @override
   Widget build(BuildContext context) {
     return Container(
+      margin: EdgeInsets.only(top: 20.0),
       child: widget.access != null && widget.access.query != null ? StreamBuilder(
         stream: widget.access.query.snapshots(),
         builder: (BuildContext context, 
@@ -325,8 +332,7 @@ AutomaticKeepAliveClientMixin<Criteria> {
           _specFocusNode, AutocompleteQuery(specialization_list, "Specialization"), specializationEditingController
       )
     );
-//    locationEditingController.clear();
-//    specializationEditingController.clear();
+
     _initPlatformState();
   }
 
@@ -582,7 +588,9 @@ AutomaticKeepAliveClientMixin<Criteria> {
       setState(() {
         _hasInputChanged = false;
       });
-    } 
+    } else {
+      showAlertDialog(["Okay"], "Info", "Change something on this page in order to execute a search");
+    }
   }
 
   void _buildQuery() {
