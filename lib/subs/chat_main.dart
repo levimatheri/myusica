@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:myusica/helpers/auth.dart';
 import 'package:myusica/helpers/user.dart';
+import 'package:myusica/helpers/myuser.dart';
 import 'package:myusica/subs/chat.dart';
 import 'package:myusica/helpers/myuser_picture.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -19,6 +20,7 @@ class ChatMainState extends State<ChatMain> {
   List<String> peerIds;
   List<bool> messageSeen;
   bool isLoading;
+  List<int> toSetInChatObj = new List<int>();
   int i = 0;
   @override
   void initState() {
@@ -35,7 +37,7 @@ class ChatMainState extends State<ChatMain> {
 
     isLoading = false;
 
-    // print(widget.chats.length);
+    print(widget.chats.length);
 
     if (widget.chats.length > 0) _initChatList();
   }
@@ -51,27 +53,44 @@ class ChatMainState extends State<ChatMain> {
         });    
         // get peer object
         map = await widget.auth.getUser(peerIds[j]);
-        User user = User.fromMap(map, peerIds[j]);
-        setState(() {
-          peerNames[j] = user.name;
-        });
+        bool isMyuser = await widget.auth.isMyuser(peerIds[j]);
+        if (!isMyuser) {
+          User user = User.fromMap(map, peerIds[j]);
+          setState(() {
+            peerNames[j] = user.username;
+          });
 
-        setState(() {
-          messageSeen[j] = widget.chats[j]['seen'];
-        });
-        
-        if (user.picture != null && user.picture.length != 0) {
-          dynamic picUrlResult = await getUserProfilePicture(user);
-          if (picUrlResult != null) {
+          setState(() {
+            messageSeen[j] = widget.chats[j]['seen'];
+          });
+            
+          setState(() {
+            peerPicUrlList[j] = user.username.toUpperCase().substring(0,1); 
+          });      
+        } else {
+          Myuser user = Myuser.fromMap(map, peerIds[j]);
+          setState(() {
+            peerNames[j] = user.name;
+          });
+
+          setState(() {
+            messageSeen[j] = widget.chats[j]['seen'];
+          });
+          
+          if (user.picture != null && user.picture.length != 0) {
+            dynamic picUrlResult = await getProfilePicture(user);
+            if (picUrlResult != null) {
+              setState(() {
+                peerPicUrlList[j] = picUrlResult;
+              });
+            }
+          } else {
             setState(() {
-              peerPicUrlList[j] = picUrlResult;
+              peerPicUrlList[j] = user.name.substring(0,1); 
             });
           }
-        } else {
-          setState(() {
-           peerPicUrlList[j] = user.name.substring(0,1); 
-          });
         }
+        
       }
     }
     if (map != null) {
@@ -86,6 +105,10 @@ class ChatMainState extends State<ChatMain> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context, toSetInChatObj),
+        ),
         title: Text("Chats"),
       ),
       body: isLoading ? Center(child:CircularProgressIndicator()) : _buildChatList(),
@@ -102,7 +125,8 @@ class ChatMainState extends State<ChatMain> {
       if (result != null) {
         // set seen at this index to true
         setState(() {
-         messageSeen[result] = true; 
+          messageSeen[result] = true; 
+          toSetInChatObj.add(result);
         });
       }
     });

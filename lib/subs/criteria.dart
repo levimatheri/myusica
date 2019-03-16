@@ -3,8 +3,6 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 
-import 'package:myusica/home.dart';
-
 import 'package:myusica/helpers/specializations.dart';
 import 'package:myusica/helpers/access.dart';
 import 'package:myusica/helpers/auth.dart';
@@ -344,7 +342,7 @@ AutomaticKeepAliveClientMixin<Criteria> {
     Navigator.push(
       context, 
       MaterialPageRoute(settings: RouteSettings(),
-                        builder: (context) => Results(auth: widget.auth, access: widget.access,))
+                        builder: (context) => Results(auth: widget.auth, access: widget.access, fromHome: false,))
     );
   }
 

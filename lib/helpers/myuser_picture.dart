@@ -24,17 +24,17 @@ Future<dynamic> getProfilePicture(Myuser myuser) async {
 }
 
 //TODO: NEED TO ABSTRACT USER CLASS TO AVOID CREATING IDENTICAL FUNCTIONS
-Future<dynamic> getUserProfilePicture(User user) async {
-  try {
-    FirebaseStorage storage = new FirebaseStorage(
-      storageBucket: 'gs://myusica-4818e.appspot.com'
-    );
-    StorageReference imageLink = 
-      storage.ref().child('myuser-profile-pictures').child(user.picture);
-    final imageUrl = await imageLink.getDownloadURL();
-    return imageUrl;
-  } catch (e) {
-    print("No picture found");
-    return null;
-  } 
-}
+// Future<dynamic> getUserProfilePicture(User user) async {
+//   try {
+//     FirebaseStorage storage = new FirebaseStorage(
+//       storageBucket: 'gs://myusica-4818e.appspot.com'
+//     );
+//     StorageReference imageLink = 
+//       storage.ref().child('myuser-profile-pictures').child(user.picture);
+//     final imageUrl = await imageLink.getDownloadURL();
+//     return imageUrl;
+//   } catch (e) {
+//     print("No picture found");
+//     return null;
+//   } 
+// }

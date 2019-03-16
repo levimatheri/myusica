@@ -21,27 +21,29 @@ class MyAccountState extends State<MyAccount> {
     super.initState();
     // check if current user is a myuser
     widget.auth.isMyuser(widget.userId).then((result) {
-      setState(() {
-       isMyuser = result; 
-       isLoading = true;
-      });
-      if (result) {
-        // if this user is a Myuser, get the myuser object and their profile picture
-        widget.auth.getUser(widget.userId).then((result) {
-          if (result != null) {
-            setState(() {
-                thisMyuser = Myuser.fromMap(result, widget.userId);
-            });
-            if (thisMyuser != null) {
-              getProfilePicture(thisMyuser).then((url) {
-                setState(() {
-                 myuserPicUrl = url; 
-                 isLoading = false;
-                });
-              });
-            }
-          }
+      if (result != null) {
+        setState(() {
+        isMyuser = result; 
+        isLoading = true;
         });
+        if (result) {
+          // if this user is a Myuser, get the myuser object and their profile picture
+          widget.auth.getUser(widget.userId).then((result) {
+            if (result != null) {
+              setState(() {
+                  thisMyuser = Myuser.fromMap(result, widget.userId);
+              });
+              if (thisMyuser != null) {
+                getProfilePicture(thisMyuser).then((url) {
+                  setState(() {
+                  myuserPicUrl = url; 
+                  isLoading = false;
+                  });
+                });
+              }
+            }
+          });
+        }
       }
     });
   }

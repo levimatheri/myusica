@@ -2,15 +2,14 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:connectivity/connectivity.dart';
 import 'package:myusica/root.dart';
 import 'package:myusica/routes.dart';
 import 'package:myusica/helpers/auth.dart';
 import 'package:myusica/helpers/dialogs.dart';
-import 'package:dart_ping/dart_ping.dart';
 
 void main() {
   runApp(MaterialApp(
+    debugShowCheckedModeBanner: false,
     title: "Myusica",
     theme: new ThemeData(
       brightness: Brightness.dark,

@@ -129,7 +129,7 @@ class LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     _isIos = Theme.of(context).platform == TargetPlatform.iOS;
-    // prevent user from going back to home after they log out using WillPopScope
+    // prevent user from going back to home (using the system back button) after they log out using WillPopScope
     return WillPopScope(
       onWillPop: () async => false,
       child: new Scaffold(
@@ -251,13 +251,6 @@ class LoginPageState extends State<LoginPage> {
             showAlertDialog(context, ["Okay"], "Error", "Please confirm password");
             return;
           }
-          // else {
-          //   if (value != _password) 
-          //   {
-          //     showAlertDialog(context, ["Okay"], "Error", "Passwords do not match");
-          //     return;
-          //   }
-          // }
         }
       ),
     ) : Container();

@@ -16,7 +16,8 @@ class Results extends StatefulWidget {
   final String id;
   final BaseAuth auth;
   final List<Map<String, dynamic>> chats;
-  Results({this.access, this.id, this.auth, this.chats});
+  final bool fromHome;
+  Results({this.access, this.id, this.auth, this.chats, this.fromHome});
   ResultsState createState() => new ResultsState();
 }
 
@@ -78,6 +79,8 @@ class ResultsState extends State<Results> {
         }
     });
 
+    toRemove.add(widget.id);
+
     // remove what doesn't match. We feed the unwanted to an external list to prevent
     // the error of trying to remove while iterating
     docs.removeWhere((d) => toRemove.contains(d.documentID));
@@ -101,7 +104,11 @@ class ResultsState extends State<Results> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Myusers (musicians)"), backgroundColor: Colors.orange,),
+      appBar: AppBar(
+        title: Text("Myusers (musicians)"), 
+        backgroundColor: Colors.orange,
+        automaticallyImplyLeading: widget.fromHome ? false : true,
+      ),
       body: Container(
         margin: EdgeInsets.only(top: 20.0),
         child: widget.access != null && widget.access.query != null ? StreamBuilder(

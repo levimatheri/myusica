@@ -997,7 +997,7 @@ class RegisterState extends State<Register> {
   }
 
   Widget _showCircularProgress() {
-    return _isLoading ? Center(child: CircularProgressIndicator()) 
+    return _isLoading ? Center(child: CircularProgressIndicator(),) 
                : Container(height: 0.0, width: 0.0);
   }
 

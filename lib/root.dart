@@ -24,33 +24,43 @@ class _RootPageState extends State<RootPage> {
   String _userId = "";
   String _username = "";
   bool _isMyuser = false;
+  bool _isLoading = false;
   List<Map<String, dynamic>> _chats = List<Map<String, dynamic>>();
   @override
   void initState() {
     super.initState();
     // determine logged in status
     // initialize stuff 
-    _initPlatform();   
+     _initPlatform();   
   }
 
   _initPlatform() async {
     FirebaseUser user = await widget.auth.getCurrentUser();
+    print('user ' + user.toString());
     setState(() {
       if (user != null) 
       {
         _userId = user?.uid;
       }     
+      else {
+        setState(() {
+         authStatus = AuthStatus.NOT_LOGGED_IN; 
+        });
+      }
       authStatus = 
           user?.uid == null ? AuthStatus.NOT_LOGGED_IN : AuthStatus.LOGGED_IN;
     });
-    
-    if (_userId != null && _userId != "") {
-      initStuff();
+    print(_userId);
+    if (user?.uid != null) {
+      await initStuff();
     }
   }
 
-  void initStuff() async {
-    String username = await widget.auth.getUsername(_userId);   
+  initStuff() async {
+    setState(() {
+     _isLoading = true; 
+    });
+    String username = await widget.auth.getUsername(_userId);  
     setState(() {
       if (username != null) {
         _username = username;
@@ -72,6 +82,9 @@ class _RootPageState extends State<RootPage> {
           _chats.add(map);
         });
       }
+      setState(() {
+        _isLoading = false;
+      });
     });
   }
 
@@ -81,7 +94,7 @@ class _RootPageState extends State<RootPage> {
       if (user != null) 
       {
         _userId = user?.uid;
-        initStuff();
+        await initStuff();
       }
     });
     
@@ -121,7 +134,7 @@ class _RootPageState extends State<RootPage> {
         break;
       case AuthStatus.LOGGED_IN:
         if (_userId != null) {
-          return HomePage(
+          return _isLoading ? _buildWaitingScreen() : HomePage(
             userId: _userId,
             username: _username,
             auth: widget.auth,

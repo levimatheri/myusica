@@ -16,6 +16,8 @@ abstract class BaseAuth {
 
   Future<List<dynamic>> getChats(String userId);
 
+  Future<List<String>> getPushTokens(String userId);
+
   Future<void> signOut();
 
   Future<bool> isMyuser(String userId);
@@ -84,20 +86,32 @@ class Auth implements BaseAuth {
 
   Future<List<dynamic>> getChats(String userId) async {
     DocumentSnapshot snapshot = await _firestoreRecord.collection("users").document(userId).get();
+    if (snapshot.data == null) return null;
     return snapshot.data['chatIds'];
   }
 
   @override
+  Future<List<String>> getPushTokens(String userId) async {
+    DocumentSnapshot snapshot = await _firestoreRecord.collection("users").document(userId).get();
+    if (snapshot.data == null) return null;
+    return List<String>.from(snapshot.data['pushtokens']);
+  }  
+
+  @override
   Future<bool> isMyuser(String userId) async {
     DocumentSnapshot snapshot = await _firestoreRecord.collection("users").document(userId).get();
+    if (snapshot.data == null) return null;
     return snapshot.data['type'] == 'myuser';
   }
 
   @override
   Future<Map<String, dynamic>> getUser(String userId) async {
     DocumentSnapshot snapshot = await _firestoreRecord.collection("users").document(userId).get();
+    if (snapshot.data == null) return null;
     return Map<String, dynamic>.from(snapshot.data);
   }
+
+
 
 
   @override
