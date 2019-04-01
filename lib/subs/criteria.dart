@@ -215,8 +215,8 @@ AutomaticKeepAliveClientMixin<Criteria> {
                       activeColor: Colors.indigoAccent,
                       value: _chargeSliderVal,
                       min: 5.0,
-                      max: 100.0,
-                      divisions: 20,
+                      max: 500.0,
+                      // divisions: 10,
                       onChanged: (double newCharge) {
                         setState(() {
                           _chargeSliderVal = newCharge;

@@ -36,7 +36,7 @@ class _RootPageState extends State<RootPage> {
 
   _initPlatform() async {
     FirebaseUser user = await widget.auth.getCurrentUser();
-    print('user ' + user.toString());
+    // print('user ' + user.toString());
     setState(() {
       if (user != null) 
       {

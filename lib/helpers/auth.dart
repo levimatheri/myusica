@@ -81,12 +81,14 @@ class Auth implements BaseAuth {
   Future<String> getUsername(String userId) async {
     DocumentSnapshot snapshot = await _firestoreRecord.collection("users").document(userId).get();
     if (snapshot.data == null) return null;
+    if (snapshot.data['username'] == null) return null;
     return snapshot.data['username'];
   }
 
   Future<List<dynamic>> getChats(String userId) async {
     DocumentSnapshot snapshot = await _firestoreRecord.collection("users").document(userId).get();
     if (snapshot.data == null) return null;
+    if (snapshot.data['chatIds'] == null) return null;
     return snapshot.data['chatIds'];
   }
 
@@ -94,6 +96,9 @@ class Auth implements BaseAuth {
   Future<List<String>> getPushTokens(String userId) async {
     DocumentSnapshot snapshot = await _firestoreRecord.collection("users").document(userId).get();
     if (snapshot.data == null) return null;
+    if (snapshot.data['pushtokens'] == null) {
+      return null;
+    }
     return List<String>.from(snapshot.data['pushtokens']);
   }  
 

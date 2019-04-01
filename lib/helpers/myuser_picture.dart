@@ -5,7 +5,7 @@ import 'package:myusica/helpers/user.dart';
 
 // get myuser profile picture url from firebase
 Future<dynamic> getProfilePicture(Myuser myuser) async {
-  if (myuser.picture.length == 0 || myuser.picture == null) {
+  if (myuser.picture == null) {
     return null;
   }
   

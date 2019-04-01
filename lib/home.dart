@@ -95,6 +95,7 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin,
   }
 
   _updateToken() async {
+    print(widget.auth);
     List<String> pushTokens = await widget.auth.getPushTokens(widget.userId);
     if (pushTokens == null) {
       // create pushToken object
@@ -111,6 +112,8 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin,
       Firestore.instance.runTransaction((transaction) async {
         await transaction.update(docRef, {'pushtokens': ptObj});
       });
+
+      globalPushTokens = ptObj;
 
     } else {
       // go through pushTokens for this user and check if currToken is in the list
