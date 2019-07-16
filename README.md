@@ -10,6 +10,15 @@
   </a>
 </div>
 
+
+
 A mobile application for connecting people to musicians around them based on their needs. Built with Flutter with a Firebase backend database.
 
+  Page Name | Image   
+ --- | --- 
+ Log in page | <img src="myusica1.png" height= "600"/>
+ Home page with musicians to hire | <img src="myusica2.png" height= "600"/>
+ Search by location | <img src="myusica3.png" height= "600"/>
+ Chat | <img src="myusica4.png" height= "600"/>
+  
 App has been published for Android on Google Play [here](https://play.google.com/store/apps/details?id=com.levisoftwares.myusica&fbclid=IwAR2U7ZoUcRiduFDvCOCj65_tgc4tTaRl_hEXocEBvDaxDap6IK4bZ58GBHI)
